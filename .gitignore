@@ -23,10 +23,3 @@ Thumbs.db
 .vscode/
 .idea/
 
-# AI tool configs
-.agents/
-.claude/
-.codex/
-.opencode/
-.mcp.json
-opencode.json
