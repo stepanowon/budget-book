@@ -39,10 +39,10 @@
 
 | 도메인 | 태스크 수 | S | M | L |
 |--------|---------|---|---|---|
-| DB | 20개 | 10 | 9 | 1 |
+| DB | 14개 | 10 | 3 | 1 |
 | BE | 29개 | 8 | 15 | 6 |
 | FE | 30개 | 12 | 14 | 4 |
-| **합계** | **79개** | **30** | **38** | **11** |
+| **합계** | **73개** | **30** | **32** | **11** |
 
 ---
 
@@ -75,18 +75,18 @@ pgcrypto 익스텐션과 7개 ENUM 타입을 idempotent하게 생성한다.
 
 ---
 
-### DB-03. Supabase Auth 연동 — users 테이블과 auth.users 동기화
-> 복잡도: `M` | 의존성: DB-02
+### DB-03. refresh_tokens 테이블 생성 및 제약 조건 설정
+> 복잡도: `S` | 의존성: DB-02
 
-auth.users INSERT 이벤트를 트리거하여 public.users 레코드를 자동 생성하는 함수와 트리거를 구현한다.
+자체 JWT 인증에서 Refresh Token을 DB로 관리하기 위한 테이블을 생성한다. 탈퇴·로그아웃 시 해당 레코드를 삭제하여 토큰을 무효화한다.
 
 **완료 조건**
-- [ ] Supabase Auth 가입 완료 시 public.users 레코드 자동 생성
-- [ ] auth.users.id와 public.users.id가 동일한 UUID로 연결
-- [ ] 이메일 미인증 상태에서 서비스 이용 차단 전략 구현 및 문서화
-- [ ] Refresh Token 무효화(탈퇴 시) 전략 문서화
+- [ ] refresh_tokens 테이블 생성 완료 (id, user_id FK→users.id ON DELETE CASCADE, token, expires_at, created_at)
+- [ ] UNIQUE(token) 제약으로 토큰 중복 저장 차단 확인
+- [ ] user_id ON DELETE CASCADE 동작 확인 — users 레코드 삭제(inactive 전환이 아닌 테스트용) 시 토큰 자동 삭제
+- [ ] expires_at 인덱스 생성하여 만료 토큰 조회 최적화 확인
 
-**참조 규칙**: BR-12, AC-U3, AC-U4
+**참조 규칙**: BR-12, NFR-SEC01, NFR-SEC07, AC-U3, AC-U4
 
 ---
 
@@ -179,81 +179,6 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 
 ---
 
-### DB-11. RLS 활성화 및 users 테이블 정책 설정
-> 복잡도: `M` | 의존성: DB-02, DB-03
-
-**완료 조건**
-- [ ] auth.uid()와 다른 users.id에 대한 직접 SELECT가 RLS에 의해 차단
-- [ ] 동일 그룹 멤버의 username은 조회 가능
-- [ ] 다른 사용자의 password_hash 노출 차단
-
-**참조 규칙**: BR-12, DR-01
-
----
-
-### DB-12. RLS 설정 — groups, group_members 테이블
-> 복잡도: `M` | 의존성: DB-04, DB-11
-
-**완료 조건**
-- [ ] 소속되지 않은 그룹에 대한 SELECT가 빈 결과 반환
-- [ ] MEMBER 역할로 groups UPDATE 시도 시 RLS에 의해 차단
-- [ ] MANAGER만 group_members INSERT/DELETE 가능
-
-**참조 규칙**: BR-01, BR-02, BR-13, BR-14, DR-02
-
----
-
-### DB-13. RLS 설정 — invitations 테이블
-> 복잡도: `M` | 의존성: DB-08, DB-12
-
-**완료 조건**
-- [ ] MANAGER가 아닌 사용자의 초대 INSERT가 차단
-- [ ] invitee 본인이 자신의 초대 상태를 ACCEPTED/DECLINED로 변경 가능
-- [ ] 제3자가 타인의 초대 레코드를 조회하거나 수정할 수 없음
-
-**참조 규칙**: BR-03, AC-I1, AC-I2, AC-I3, AC-I4
-
----
-
-### DB-14. RLS 설정 — categories 테이블
-> 복잡도: `M` | 의존성: DB-05, DB-12
-
-**완료 조건**
-- [ ] SYSTEM 카테고리가 인증된 사용자 전체에게 조회됨
-- [ ] 다른 그룹의 GROUP 카테고리가 조회되지 않음
-- [ ] SYSTEM 카테고리 DELETE 시도가 차단
-- [ ] MEMBER 역할로 GROUP 카테고리 INSERT 시도 시 차단
-
-**참조 규칙**: BR-10, BR-11, AC-C1, AC-C2, AC-C3
-
----
-
-### DB-15. RLS 설정 — expenses, expense_splits 테이블
-> 복잡도: `M` | 의존성: DB-06, DB-12
-
-**완료 조건**
-- [ ] 그룹 멤버이면 모든 지출 SELECT 가능 (BR-04 가시성 정책)
-- [ ] 그룹 비멤버는 지출 조회 불가
-- [ ] MEMBER가 타인 작성 지출 UPDATE/DELETE 시도 시 차단
-- [ ] 정산 완료 후에도 지출 수정/삭제가 RLS 레이어에서 허용 (정산 불변은 애플리케이션 책임)
-
-**참조 규칙**: BR-04, BR-06, BR-15, AC-EX1, AC-EX2
-
----
-
-### DB-16. RLS 설정 — settlements, settlement_details, messages 테이블
-> 복잡도: `M` | 의존성: DB-07, DB-12
-
-**완료 조건**
-- [ ] MEMBER 역할로 settlements INSERT 시도 시 차단
-- [ ] settlements/settlement_details DELETE가 차단 (BR-15)
-- [ ] messages SELECT 시 본인(recipient_user_id) 메시지만 반환
-- [ ] 일반 사용자 역할로 messages INSERT 시도 시 차단
-
-**참조 규칙**: BR-07, BR-08, BR-09, BR-15, AC-S2, AC-M1, AC-M2
-
----
-
 ### DB-17. 초대 만료 배치 처리 — PENDING → EXPIRED 전환
 > 복잡도: `M` | 의존성: DB-08
 
@@ -270,7 +195,7 @@ expires_at이 현재 시각 이전인 PENDING 초대를 EXPIRED로 일괄 전환
 ---
 
 ### DB-18. DB 함수 — MANAGER 권한 이양 및 그룹 비활성화
-> 복잡도: `L` | 의존성: DB-04, DB-03
+> 복잡도: `L` | 의존성: DB-04, DB-02
 
 transfer_manager_or_deactivate_group 함수를 구현하여 MANAGER 탈퇴 시 권한 이양 또는 그룹 비활성화를 트랜잭션으로 처리한다.
 
@@ -1104,7 +1029,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 
 ### Phase 1 — 기반 (병렬 가능)
 ```
-DB-01 → DB-02 → DB-03
+DB-01 → DB-02 → DB-03(refresh_tokens)
 BE-01 → BE-02, BE-03, BE-05
 FE-01 → FE-02, FE-03, FE-04, FE-05, FE-06
 ```
@@ -1120,7 +1045,6 @@ FE-07 → FE-08               (레이아웃, 인증 훅)
 
 ### Phase 3 — 핵심 기능 (순차)
 ```
-DB-11 ~ DB-16               (RLS 정책)
 DB-17, DB-18, DB-19         (배치/함수)
 BE-10 → BE-11 → BE-12 → BE-13  (인증 전체)
 BE-14 → BE-15               (그룹)
