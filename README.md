@@ -37,6 +37,7 @@
 | [아키텍처 다이어그램](docs/5-arch-diagram.md) | 시스템 구성, 인증 흐름, 정산 흐름, 초대 상태 전이 (Mermaid) |
 | [ERD](docs/6-erd.md) | 10개 엔티티 관계도, 속성·제약·FK 전략, 주요 관계 설명 |
 | [실행 계획](docs/7-execution-plan.md) | DB·BE·FE 79개 태스크, 체크박스형 완료 조건 및 의존성, 5단계 구현 순서 |
+| [와이어프레임](docs/8-wireframe.md) | 전체 화면 구조, ASCII 와이어프레임, 권한별 UI 차이, 공통 컴포넌트 명세 |
 
 ---
 
