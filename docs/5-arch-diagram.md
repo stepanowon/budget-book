@@ -118,9 +118,8 @@ erDiagram
 graph LR
     Cron["node-cron"]
 
-    Cron -- "매월 1일 00:00 KST" --> MonthlyJob["자동 정산 생성\n(상시 그룹 전월 지출 집계)"]
     Cron -- "매일 00:00 KST" --> ArchiveJob["기간 한정 그룹\n자동 ARCHIVED 처리"]
     Cron -- "매일 주기적 실행" --> ExpireJob["만료 초대 처리\n(PENDING → EXPIRED)"]
-
-    MonthlyJob -- "실패 시" --> FailNotify["관리자에게\nBATCH_FAILURE 알림"]
 ```
+
+> 정산은 자동 배치 없이 **관리자가 직접 수동 실행**한다.

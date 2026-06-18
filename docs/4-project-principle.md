@@ -817,8 +817,8 @@ backend/
 │   │   └── supabase.ts             # supabaseAdmin 클라이언트 초기화 (단일 인스턴스)
 │   │
 │   ├── jobs/                       # 스케줄 배치 작업
-│   │   ├── monthlySettlement.ts    # 매월 1일 자동 정산 (node-cron)
-│   │   └── expireInvitations.ts    # 매일 만료 초대 처리
+│   │   ├── archiveGroups.ts        # 매일 자정 기간 한정 그룹 자동 ARCHIVED 처리
+│   │   └── expireInvitations.ts    # 매일 만료 초대 처리 (PENDING → EXPIRED)
 │   │
 │   ├── constants/                  # 공통 상수
 │   │   ├── httpStatus.ts           # HTTP 상태 코드
@@ -860,7 +860,7 @@ backend/
 | `repositories/` | Supabase 쿼리 전용. `supabaseAdmin` 접근 유일 위치 |
 | `middlewares/` | 인증·인가·유효성 검사·에러 처리 미들웨어 |
 | `lib/` | 외부 클라이언트 초기화 (Supabase 단일 인스턴스) |
-| `jobs/` | node-cron 배치 작업 (자동 정산, 초대 만료 처리) |
+| `jobs/` | node-cron 배치 작업 (그룹 자동 아카이브, 초대 만료 처리) |
 | `utils/` | 정산 알고리즘, 분담액 계산 등 순수 함수 (단위 테스트 대상) |
 | `types/` | Express 타입 확장, 도메인 엔티티 타입 |
 
