@@ -1,125 +1,284 @@
 # 기술 아키텍처 다이어그램 — 공동 가계부 서비스
 
-**버전:** 1.0  
-**작성일:** 2026-06-18  
-**참조 문서:** `docs/1-domain-definition.md`, `docs/2-prd.md`, `docs/4-project-principle.md`
+> 버전: 1.1  
+> 작성일: 2026-06-18  
+> 관련 문서: [1-domain-definition.md](1-domain-definition.md) · [2-prd.md](2-prd.md) · [3-user-scenario.md](3-user-scenario.md) · [4-project-principle.md](4-project-principle.md)
 
 ---
 
-## 1. 시스템 전체 구성
+## 목차
+
+1. [전체 시스템 아키텍처](#1-전체-시스템-아키텍처)
+2. [엔티티 관계도 (ERD)](#2-엔티티-관계도-erd)
+3. [인증 흐름](#3-인증-흐름)
+4. [정산 실행 흐름](#4-정산-실행-흐름)
+5. [초대 상태 전이](#5-초대-상태-전이)
+
+---
+
+## 1. 전체 시스템 아키텍처
+
+클라이언트 요청이 프론트엔드 → 백엔드 REST API → Supabase 데이터베이스를 거쳐 처리되는 전체 흐름을 표현합니다.
+
+> v1 범위: 영수증·사진 첨부 미지원(SC-02). 파일 스토리지는 Out-of-Scope.
 
 ```mermaid
-graph TB
-    subgraph Client["클라이언트"]
-        Browser["브라우저\nReact + TypeScript"]
-    end
+flowchart TB
+    Browser["🌐 Browser<br/>React + TS"]
+    FE["Frontend Layer<br/>Components/Hooks"]
+    API["Backend API<br/>Express"]
+    Middleware["Auth/Role<br/>Middleware"]
+    Service["Service Layer<br/>Business Logic"]
+    DB["PostgreSQL<br/>Supabase"]
 
-    subgraph Server["백엔드 서버"]
-        API["Node.js + Express\nREST API"]
-        Batch["배치 작업\nnode-cron"]
-    end
-
-    subgraph Supabase["Supabase (BaaS)"]
-        DB["PostgreSQL\n(데이터 저장)"]
-        Storage["Supabase Storage\n(파일 첨부 · 2차 개발)"]
-    end
-
-    Browser -- "HTTPS / REST" --> API
-    API -- "supabaseAdmin" --> DB
-    API -- "파일 업로드" --> Storage
-    Batch -- "월별 정산 자동 실행\n초대 만료 처리" --> API
+    Browser -->|HTTP/REST| FE
+    FE -->|JWT + JSON| API
+    API --> Middleware
+    Middleware -->|Validated Request| Service
+    Service -->|Query/Insert| DB
+    DB -->|Result| Service
+    Service -->|JSON Response| API
+    API -->|JSON| FE
+    FE -->|Render UI| Browser
 ```
 
 ---
 
-## 2. 프론트엔드 레이어
+## 2. 엔티티 관계도 (ERD)
 
-```mermaid
-graph TB
-    Pages["Pages\n화면 조립 · 라우팅"]
-    Features["Features\n도메인별 컴포넌트 · 훅"]
-    Hooks["Custom Hooks\nReact Query · Zustand"]
-    Services["Services\nAPI 호출 함수"]
-    HTTP["axios 인스턴스\n인터셉터 (토큰 자동 갱신)"]
-
-    Pages --> Features
-    Features --> Hooks
-    Hooks --> Services
-    Services --> HTTP
-```
-
-> 컴포넌트는 훅을 경유하여 서비스를 호출한다. 서비스를 직접 호출하지 않는다.
-
----
-
-## 3. 백엔드 레이어
-
-```mermaid
-graph TB
-    Router["Router\n엔드포인트 정의 · 미들웨어 연결"]
-    MW["Middleware\nJWT 인증 · 그룹 멤버십 인가 · 요청 유효성 검사"]
-    Controller["Controller\nreq 파싱 → Service 호출 → res 반환"]
-    Service["Service\n비즈니스 로직 · 도메인 규칙 검증"]
-    Repository["Repository\nSupabase 쿼리 (DB 접근 유일 위치)"]
-    DB[("Supabase PostgreSQL")]
-
-    Router --> MW
-    MW --> Controller
-    Controller --> Service
-    Service --> Repository
-    Repository --> DB
-```
-
----
-
-## 4. 인증 흐름
-
-```mermaid
-sequenceDiagram
-    participant C as 클라이언트
-    participant API as 백엔드 API
-    participant DB as Supabase DB
-
-    C->>API: POST /api/auth/login
-    API->>DB: 사용자 조회 · 비밀번호 검증
-    DB-->>API: 사용자 정보
-    API-->>C: Access Token (1h) + Refresh Token (30d, HttpOnly 쿠키)
-
-    Note over C,API: Access Token 만료 시
-    C->>API: 임의 API 호출 → 401 응답
-    C->>API: POST /api/auth/refresh (Refresh Token)
-    API-->>C: 새 Access Token
-```
-
----
-
-## 5. 도메인 엔티티 관계
+10개 도메인 엔티티와 그 간 관계를 PK/FK 기준으로 표현합니다. 카디널리티는 |o, ||, o{, }o 기호로 표시합니다.
 
 ```mermaid
 erDiagram
-    User ||--o{ GroupMember : "소속"
-    Group ||--o{ GroupMember : "구성"
-    Group ||--o{ Expense : "포함"
-    Group ||--o{ Settlement : "정산"
-    Group ||--o{ GroupInvitation : "초대"
-    GroupMember ||--o{ Expense : "결제·입력"
-    GroupMember ||--o{ ExpenseParticipant : "참여"
-    Expense ||--o{ ExpenseParticipant : "분담"
-    Settlement ||--o{ SettlementItem : "내역"
-    GroupMember ||--o{ SettlementItem : "송금"
-    User ||--o{ Notification : "수신"
+    USER {
+        uuid id PK
+        string username UK
+        string email
+        string status
+    }
+    
+    GROUP {
+        uuid id PK
+        string name
+        string type
+        date start_date
+        uuid created_by FK
+        string status
+    }
+    
+    GROUP_MEMBER {
+        uuid id PK
+        uuid group_id FK
+        uuid user_id FK
+        string role
+    }
+    
+    INVITATION {
+        uuid id PK
+        uuid group_id FK
+        uuid inviter_id FK
+        string invitee_username
+        string status
+    }
+    
+    CATEGORY {
+        uuid id PK
+        string name
+        string scope
+        uuid group_id FK "nullable"
+    }
+    
+    EXPENSE {
+        uuid id PK
+        uuid group_id FK
+        uuid paid_by FK
+        uuid category_id FK
+        integer total_amount
+        date date
+        string split_type
+    }
+    
+    EXPENSE_SPLIT {
+        uuid id PK
+        uuid expense_id FK
+        uuid user_id FK
+        integer amount
+    }
+    
+    SETTLEMENT {
+        uuid id PK
+        uuid group_id FK
+        date period_start
+        date period_end
+        uuid created_by FK
+    }
+    
+    SETTLEMENT_DETAIL {
+        uuid id PK
+        uuid settlement_id FK
+        uuid user_id FK
+        integer total_paid
+        integer total_share
+        integer balance
+    }
+    
+    MESSAGE {
+        uuid id PK
+        uuid settlement_id FK
+        uuid recipient_user_id FK
+        string content
+    }
+
+    USER ||--o{ GROUP : "creates"
+    USER ||--o{ GROUP_MEMBER : "belongs_to"
+    GROUP ||--o{ GROUP_MEMBER : "has"
+    GROUP ||--o{ INVITATION : "receives"
+    USER ||--o{ INVITATION : "sends"
+    GROUP ||--o{ CATEGORY : "has"
+    GROUP ||--o{ EXPENSE : "tracks"
+    USER ||--o{ EXPENSE : "pays"
+    EXPENSE ||--o{ EXPENSE_SPLIT : "splits_into"
+    USER ||--o{ EXPENSE_SPLIT : "participates_in"
+    GROUP ||--o{ SETTLEMENT : "settles"
+    USER ||--o{ SETTLEMENT : "executes"
+    SETTLEMENT ||--o{ SETTLEMENT_DETAIL : "contains"
+    USER ||--o{ SETTLEMENT_DETAIL : "appears_in"
+    SETTLEMENT ||--o{ MESSAGE : "triggers"
+    USER ||--o{ MESSAGE : "receives"
 ```
 
 ---
 
-## 6. 배치 작업 스케줄
+## 3. 인증 흐름
+
+로그인 시 Access Token과 Refresh Token 발급, API 요청 시 토큰 검증, 만료 시 갱신, 탈퇴 시 토큰 무효화 흐름을 표현합니다.
 
 ```mermaid
-graph LR
-    Cron["node-cron"]
+sequenceDiagram
+    participant Browser as 🌐 Browser
+    participant Backend as 🔐 Backend
+    participant DB as 💾 DB
 
-    Cron -- "매일 00:00 KST" --> ArchiveJob["기간 한정 그룹\n자동 ARCHIVED 처리"]
-    Cron -- "매일 주기적 실행" --> ExpireJob["만료 초대 처리\n(PENDING → EXPIRED)"]
+    Note over Browser,DB: 1️⃣ 로그인 요청
+    Browser->>Backend: POST /auth/login (email, password)
+    Backend->>DB: SELECT * FROM users WHERE email = ?
+    DB-->>Backend: User 레코드
+    Backend->>Backend: bcrypt.compare(password, hash)
+    Backend-->>Browser: AccessToken (1시간) + RefreshToken (30일, httpOnly 쿠키)
+    Browser->>Browser: AccessToken → React 상태(메모리) 저장
+    Note over Browser: AccessToken: 메모리(React 상태)<br/>RefreshToken: httpOnly 쿠키<br/>localStorage 저장 금지(XSS 취약)
+
+    Note over Browser,DB: 2️⃣ API 요청 (Access Token 유효)
+    Browser->>Backend: GET /api/v1/groups (Authorization: Bearer {accessToken})
+    Backend->>Backend: JWT 서명 검증 + 만료 확인
+    Backend->>DB: SELECT * FROM groups WHERE user_id = ?
+    DB-->>Backend: Groups 리스트
+    Backend-->>Browser: 200 OK + Groups JSON
+
+    Note over Browser,DB: 3️⃣ Access Token 만료 → 갱신
+    Browser->>Backend: POST /auth/refresh (RefreshToken in cookie)
+    Backend->>DB: SELECT * FROM refresh_tokens WHERE token = ?
+    DB-->>Backend: 유효한 토큰 레코드
+    Backend-->>Browser: 새 AccessToken (1시간)
+    Browser->>Browser: 새 AccessToken 업데이트
+
+    Note over Browser,DB: 4️⃣ 사용자 탈퇴 → 세션 무효화
+    Browser->>Backend: POST /users/withdraw
+    Backend->>DB: UPDATE users SET status = 'inactive' WHERE id = ?
+    Backend->>DB: DELETE FROM refresh_tokens WHERE user_id = ?
+    Backend-->>Browser: 204 No Content
+    Browser->>Browser: 메모리 내 AccessToken 폐기 + Refresh 쿠키 삭제
+    Note over Browser: 모든 API 요청 차단<br/>(inactive 상태 + 토큰 무효)
 ```
 
-> 정산은 자동 배치 없이 **관리자가 직접 수동 실행**한다.
+---
+
+## 4. 정산 실행 흐름
+
+MANAGER가 정산을 실행하면, 기간 내 지출을 집계하여 Settlement/SettlementDetail 생성, 메시지 발송, 재정산 시 새 레코드 생성 흐름을 표현합니다.
+
+```mermaid
+sequenceDiagram
+    participant Manager as 👨‍💼 MANAGER
+    participant Backend as 🔐 Backend
+    participant DB as 💾 DB
+
+    Note over Manager,DB: 1️⃣ 정산 실행 요청
+    Manager->>Backend: POST /groups/{id}/settlements<br/>(period_start, period_end)
+    Backend->>Backend: MANAGER role 검증
+    Backend->>Backend: 기간 유효성 검증
+    Backend->>DB: SELECT * FROM expenses<br/>WHERE group_id = ? AND date BETWEEN ? AND ?
+    DB-->>Backend: 기간 내 모든 지출
+    Backend->>DB: SELECT * FROM expense_splits<br/>WHERE expense_id IN (...)
+    DB-->>Backend: 모든 분담 기록
+    Backend->>Backend: 멤버별 집계 로직<br/>(total_paid, total_share, balance)
+    Backend->>DB: INSERT INTO settlements<br/>(group_id, period_start, period_end, created_by, settled_at)
+    DB-->>Backend: Settlement 생성 (id = settlement_1)
+    Backend->>DB: INSERT INTO settlement_details (N명 분)<br/>VALUES (settlement_1, user_1, ...), ...
+    DB-->>Backend: SettlementDetail 생성 완료
+    Backend->>DB: INSERT INTO messages (N명 분)<br/>VALUES (settlement_1, user_1, ...), ...
+    DB-->>Backend: Message 생성 완료
+    Backend-->>Manager: 200 OK + Settlement JSON
+
+    Note over Manager,DB: 2️⃣ 정산 기간 지출 수정 → Settlement 불변
+    Manager->>Backend: PATCH /expenses/{id} (total_amount = 50000)
+    Backend->>Backend: 지출 수정 진행
+    Backend->>DB: UPDATE expenses SET total_amount = 50000
+    Note over Backend: Settlement_1은 변경 없음<br/>(정산 결과 스냅샷 보존)
+
+    Note over Manager,DB: 3️⃣ 재정산 → 새 Settlement 생성
+    Manager->>Backend: POST /groups/{id}/settlements<br/>(period_start, period_end)
+    Backend->>DB: SELECT * FROM expenses (수정된 데이터 기준)
+    DB-->>Backend: 최신 지출 데이터
+    Backend->>DB: INSERT INTO settlements (새 레코드)<br/>VALUES (settlement_2, ...)
+    DB-->>Backend: Settlement 생성 (id = settlement_2)
+    Backend->>DB: INSERT INTO settlement_details (settlement_2, ...)
+    Backend->>DB: INSERT INTO messages (settlement_2, ...)
+    DB-->>Backend: 메시지 전송 완료
+    Backend-->>Manager: 200 OK + Settlement_2 JSON
+    Note over Backend: Settlement_1은 그대로 유지됨<br/>Settlement_2와 독립적으로 존재
+```
+
+---
+
+## 5. 초대 상태 전이
+
+사용자 초대의 라이프사이클: PENDING → ACCEPTED/DECLINED/EXPIRED 상태 전이를 표현합니다.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: MANAGER가 초대 발송<br/>(expires_at = now + 7일)
+
+    PENDING --> ACCEPTED: 초대받은 사용자<br/>수락 응답<br/>→ GroupMember 생성
+    PENDING --> DECLINED: 초대받은 사용자<br/>거절 응답
+
+    PENDING --> EXPIRED: 배치 작업<br/>(1시간 이내)<br/>expires_at 경과
+
+    ACCEPTED --> [*]
+    DECLINED --> [*]
+    EXPIRED --> [*]
+
+    note right of PENDING
+        유효 기간: 7일
+        상태 활성: true
+    end note
+
+    note right of ACCEPTED
+        GroupMember.role = MEMBER
+        사용자가 그룹에 가입
+    end note
+
+    note right of EXPIRED
+        배치 처리로 자동 전환
+        유효 기간 초과
+    end note
+```
+
+---
+
+## 변경 이력
+
+| 버전 | 일자 | 변경 내용 | 작성자 |
+|------|------|----------|--------|
+| 1.1 | 2026-06-18 | (1) 시스템 아키텍처에서 Supabase Storage 노드 및 Upload/Download 흐름 제거 (SC-02 Out-of-Scope 반영). (2) 인증 흐름에서 AccessToken 저장 방식을 localStorage → React 상태(메모리)로 수정 (XSS 취약성 방지, 4-project-principle 보안 원칙 일치). (3) Backend 명칭 Express.js → Express 통일. | stepanowon |
+| 1.0 | 2026-06-18 | 최초 작성: 전체 시스템 아키텍처, ERD, 인증 흐름, 정산 실행 흐름, 초대 상태 전이 | stepanowon |
