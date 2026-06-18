@@ -2,7 +2,6 @@
 name: frontend-resolver
 description: 단계별 프론트엔드 개발을 위한 Skill
 model: claude-sonnet-4-6
-argument-hint: [TASK_NUMBER]
 arguments: TASK_NUMBER
 disable-model-invocation: true
 ---
@@ -11,7 +10,7 @@ disable-model-invocation: true
 
 ### 작업 내용
 
-- @docs 디렉토리의 문서들을 분석한다.
+- @docs/ 디렉토리의 문서를 분석하고 docs/7-execution-plan.md 문서의 ${TASK_NUMBER}의 내용을 읽어와 분석한다.
 - 기존 코드 분석 : 코드베이스(frontend 디렉토리)의 코드를 분석한다.
 - 계획 수립 : 독립적인 서브에이전트를 활용해 기존 코드와 문서를 분석한 결과를 바탕으로 문제를 어떻게 해결해나갈지 계획을 수립한다.
 - 테스트 작성 : 수립된 계획을 바탕으로 커버리지 80% 이상의 테스트 케이스를 작성한다.

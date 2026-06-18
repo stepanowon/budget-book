@@ -1,6 +1,6 @@
 # 기술 아키텍처 다이어그램 — 공동 가계부 서비스
 
-> 버전: 1.1  
+> 버전: 1.2  
 > 작성일: 2026-06-18  
 > 관련 문서: [1-domain-definition.md](1-domain-definition.md) · [2-prd.md](2-prd.md) · [3-user-scenario.md](3-user-scenario.md) · [4-project-principle.md](4-project-principle.md)
 
@@ -29,17 +29,23 @@ flowchart TB
     API["Backend API<br/>Express"]
     Middleware["Auth/Role<br/>Middleware"]
     Service["Service Layer<br/>Business Logic"]
+    DBPool["DB Connection Pool<br/>postgres.js (max 10)"]
     DB["PostgreSQL<br/>Supabase"]
+    Swagger["Swagger UI<br/>/api-docs"]
 
     Browser -->|HTTP/REST| FE
     FE -->|JWT + JSON| API
     API --> Middleware
     Middleware -->|Validated Request| Service
-    Service -->|Query/Insert| DB
-    DB -->|Result| Service
+    Service -->|SQL Query| DBPool
+    DBPool -->|Direct Connection| DB
+    DB -->|Result| DBPool
+    DBPool -->|Result| Service
     Service -->|JSON Response| API
     API -->|JSON| FE
     FE -->|Render UI| Browser
+    API -.->|OpenAPI 3.0| Swagger
+    Browser -.->|Documentation| Swagger
 ```
 
 ---
@@ -77,7 +83,7 @@ erDiagram
         uuid id PK
         uuid group_id FK
         uuid inviter_id FK
-        string invitee_username
+        uuid invitee_id FK
         string status
     }
     
@@ -280,5 +286,6 @@ stateDiagram-v2
 
 | 버전 | 일자 | 변경 내용 | 작성자 |
 |------|------|----------|--------|
+| 1.2 | 2026-06-18 | (1) 시스템 아키텍처: DB 접근 방식을 @supabase/supabase-js(Supabase REST API) → postgres.js 직접 연결로 변경. DB Connection Pool(max 10) 노드 추가, SQL Query 흐름 명시. (2) ERD: Invitation.invitee_username → invitee_id(UUID FK → User.id) 변경. (3) Swagger UI 엔드포인트(/api-docs) 및 OpenAPI 3.0 흐름 아키텍처에 추가. | stepanowon |
 | 1.1 | 2026-06-18 | (1) 시스템 아키텍처에서 Supabase Storage 노드 및 Upload/Download 흐름 제거 (SC-02 Out-of-Scope 반영). (2) 인증 흐름에서 AccessToken 저장 방식을 localStorage → React 상태(메모리)로 수정 (XSS 취약성 방지, 4-project-principle 보안 원칙 일치). (3) Backend 명칭 Express.js → Express 통일. | stepanowon |
 | 1.0 | 2026-06-18 | 최초 작성: 전체 시스템 아키텍처, ERD, 인증 흐름, 정산 실행 흐름, 초대 상태 전이 | stepanowon |

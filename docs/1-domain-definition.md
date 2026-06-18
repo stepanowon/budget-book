@@ -1,6 +1,6 @@
 # 도메인 정의서 — 공동 가계부 서비스
 
-> 버전: 1.3  
+> 버전: 1.4  
 > 작성일: 2026-06-18  
 > 관련 문서: [2-prd.md](2-prd.md) · [3-user-scenario.md](3-user-scenario.md) · [4-project-principle.md](4-project-principle.md) · [5-arch-diagram.md](5-arch-diagram.md)
 
@@ -195,7 +195,7 @@
 | `id` | UUID | 필수 | PK | 내부 식별자 |
 | `group_id` | UUID | 필수 | FK → Group.id | 초대 대상 그룹 |
 | `inviter_id` | UUID | 필수 | FK → User.id | 초대한 사용자 (MANAGER) |
-| `invitee_username` | string | 필수 | 존재하는 `active` 사용자의 `username` | 초대받는 사용자 |
+| `invitee_id` | UUID | 필수 | FK → User.id, `active` 사용자만 허용 | 초대받는 사용자 (username으로 조회 후 id 저장) |
 | `status` | enum | 필수 | `PENDING` \| `ACCEPTED` \| `DECLINED` \| `EXPIRED` | 초대 상태 |
 | `created_at` | timestamp | 필수 | UTC | 초대 생성 시각 |
 | `expires_at` | timestamp | 필수 | `created_at + 7일` (UTC) | 초대 만료 시각 |
@@ -514,5 +514,6 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 |------|------|----------|--------|
 | 1.0 | 2026-06-18 | 최초 작성 | stepanowon |
 | 1.1 | 2026-06-18 | 인증·화폐·시간대 정책 추가; Invitation 엔티티 신설; 전 엔티티 타입·필수·제약 명세; 균등 분배 결정론적 명세; AC 추가; DR/BR/SC 규칙 체계 도입; 추적 매트릭스·입력 검증 규칙 추가 | stepanowon |
-| 1.3 | 2026-06-18 | 7. 기술 제약표에 언어(한국어 단독, v1) 및 통화(KRW 단독, v1) 항목 추가 — PRD 11.1과 일관성 맞춤 | stepanowon |
 | 1.2 | 2026-06-18 | (1) BR-15 신설: 정산 후 Expense 수정·삭제 허용 및 정산 결과 불변 명세; AC-EX1·EX2 추가. (2) 값 중복 제거: 섹션 5에서 비밀번호·금액·시간대를 섹션 2 참조로 전환, 엔티티 표 중복 제거. (3) 검증 공백 보강: 전 AC 표에 검증 규칙 ID 컬럼 추가; Category(AC-C1~C3)·Message(AC-M1·M2) AC 신설; AC-S3 SettlementDetail 레코드 수 명세; AC-I5 배치 SLA(1시간) 추가; 에러 코드 규약(2.4) 신설; 추적 매트릭스에 검증 AC 컬럼 추가 | stepanowon |
+| 1.3 | 2026-06-18 | 7. 기술 제약표에 언어(한국어 단독, v1) 및 통화(KRW 단독, v1) 항목 추가 — PRD 11.1과 일관성 맞춤 | stepanowon |
+| 1.4 | 2026-06-18 | Invitation 엔티티 3.4 섹션: invitee_username → invitee_id(UUID FK → User.id) 변경. 초대 발송 시 username으로 사용자 조회 후 id 저장 | stepanowon |

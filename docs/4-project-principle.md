@@ -1,6 +1,6 @@
 # 프로젝트 구조 설계 원칙 — 공동 가계부 서비스
 
-> 버전: 1.0
+> 버전: 1.1
 > 작성일: 2026-06-18
 > 관련 문서: 1-domain-definition.md · 2-prd.md · 3-user-scenario.md · 5-arch-diagram.md
 
@@ -198,7 +198,7 @@ import { supabase } from '../lib/supabase';
 
 | 의존성 | 초기화 위치 | 주입 방식 |
 |--------|------------|----------|
-| Supabase 클라이언트 | `src/lib/supabase.ts` | Repository 생성자 인자 |
+| DB 연결 풀 (postgres.js) | `src/lib/db.ts` | Repository에서 import |
 | JWT 서명·검증 | `src/lib/jwt.ts` | 미들웨어에서 import |
 | 환경변수 설정 | `src/config/env.ts` | 각 레이어에서 import |
 | bcrypt | `src/lib/crypto.ts` | UserService에서 import |
@@ -345,6 +345,8 @@ const role: Role = memberData.role;
 | DELETE | `/api/v1/groups/:groupId/expenses/:expenseId` | 지출 삭제 |
 | POST | `/api/v1/groups/:groupId/settlements` | 정산 실행 |
 | GET | `/api/v1/groups/:groupId/settlements` | 정산 목록 |
+| GET | `/api/v1/groups/:groupId/reports/expenses/export` | 지출 내역 엑셀 내보내기 |
+| GET | `/api/v1/groups/:groupId/reports/settlements/:settlementId/export` | 정산 금액 엑셀 내보내기 |
 | POST | `/api/v1/groups/:groupId/invitations` | 멤버 초대 |
 | PATCH | `/api/v1/invitations/:invitationId` | 초대 응답 (수락/거절) |
 | GET | `/api/v1/messages` | 내 메시지 목록 |
@@ -595,6 +597,15 @@ const allowedOrigins =
 | `info` | 정상 동작의 주요 이벤트 기록 | 정산 실행 완료, 사용자 가입 |
 | `debug` | 개발 환경에서만 출력 | 쿼리 파라미터, 함수 진입/종료 |
 
+---
+
+### 5.6 Swagger API 문서
+
+- API 문서는 OpenAPI 3.0 명세로 작성하고, Swagger UI에서 자동 생성된다.
+- 엔드포인트: `GET /api-docs` — Swagger UI
+- 명세 파일 위치: `swagger/swagger.json` (자동 생성 또는 수동 관리)
+- 모든 API 엔드포인트는 요청/응답 예시와 에러 코드를 명세에 포함한다.
+
 **민감 정보 마스킹 (필수)**:
 - 로그에 절대 포함하지 않는 값: 비밀번호(`password`), JWT 토큰 전체 값, Supabase Service Role Key
 - 사용자 식별 시 로그에는 `userId`(UUID)만 사용하고, 이메일·username은 해시 처리 후 기록한다.
@@ -839,7 +850,7 @@ backend/
 │   │   └── cors.ts                # CORS 허용 도메인 설정
 │   │
 │   ├── lib/                       # 외부 라이브러리 초기화 (단일 인스턴스)
-│   │   ├── supabase.ts            # Supabase 클라이언트 초기화 (service role 키 사용)
+│   │   ├── db.ts                  # DB 연결 풀 (postgres.js 기반, max 10 연결)
 │   │   └── jwt.ts                 # JWT 서명·검증 유틸 함수
 │   │
 │   └── app.ts                     # Express 앱 조립 (미들웨어 등록 순서, 라우터 마운트)
@@ -883,28 +894,29 @@ app.use('/api/v1', routes);                 // 라우터 (auth 미들웨어는 �
 app.use(errorHandler);                      // 전역 에러 핸들러 (마지막)
 ```
 
-**Supabase 클라이언트 초기화 위치 및 주입 방식**:
-- `src/lib/supabase.ts`에서 단일 클라이언트 인스턴스를 생성하고 export한다.
-- Service Role Key를 사용하여 Row Level Security(RLS)를 우회하고, 권한 검증은 미들웨어에서 직접 처리한다.
-- 각 Repository는 `supabase` 인스턴스를 생성자 파라미터로 주입받거나, `lib/supabase.ts`에서 직접 import한다(v1에서는 단순성을 위해 직접 import 허용).
+**DB 연결 풀 초기화 위치 및 주입 방식**:
+- `src/lib/db.ts`에서 postgres.js 기반 DB 연결 풀을 생성하고 export한다.
+- 연결 풀 크기는 최대 10개(`max: 10`)로 설정하여 메모리 효율성과 동시성을 균형맞춘다.
+- Supabase PostgreSQL 데이터베이스에 직접 연결하며, 권한 검증은 미들웨어에서 직접 처리한다.
+- 각 Repository는 `lib/db.ts`의 `sql` 인스턴스를 import하여 쿼리를 실행한다.
 
 ```typescript
-// src/lib/supabase.ts
-import { createClient } from '@supabase/supabase-js';
+// src/lib/db.ts
+import postgres from 'postgres';
 import { env } from '../config/env';
 
-export const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+export const sql = postgres(env.DATABASE_URL, { max: 10 });
 
 // src/repositories/expense.repository.ts
-import { supabase } from '../lib/supabase';
+import { sql } from '../lib/db';
 
 export async function findExpensesByGroup(groupId: string) {
-  const { data, error } = await supabase
-    .from('expenses')
-    .select('*')
-    .eq('group_id', groupId);
-  if (error) throw error;
-  return data;
+  const expenses = await sql`
+    SELECT * FROM expenses 
+    WHERE group_id = ${groupId}
+    ORDER BY date DESC
+  `;
+  return expenses;
 }
 ```
 
@@ -915,3 +927,4 @@ export async function findExpensesByGroup(groupId: string) {
 | 버전 | 일자 | 변경 내용 | 작성자 |
 |------|------|----------|--------|
 | 1.0 | 2026-06-18 | 최초 작성 | stepanowon |
+| 1.1 | 2026-06-18 | (1) 백엔드 라이브러리 초기화 위치: `src/lib/supabase.ts` → `src/lib/db.ts` (postgres.js 기반 DB 연결 풀, max 10). (2) API 엔드포인트 명세에 엑셀 내보내기 추가: `GET /groups/:groupId/reports/expenses/export`, `GET /groups/:groupId/reports/settlements/:settlementId/export`. (3) Swagger UI 엔드포인트 추가: `GET /api-docs` (섹션 5.6). | stepanowon |

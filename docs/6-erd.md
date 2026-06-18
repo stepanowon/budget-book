@@ -51,7 +51,7 @@ erDiagram
         uuid id PK
         uuid group_id FK "→ Group.id"
         uuid inviter_id FK "→ User.id (MANAGER)"
-        varchar invitee_username "존재하는 active 사용자의 username"
+        uuid invitee_id FK "→ User.id (초대받는 사용자)"
         varchar status "enum: PENDING | ACCEPTED | DECLINED | EXPIRED"
         timestamptz created_at "UTC"
         timestamptz expires_at "UTC, created_at + 7일"
@@ -217,14 +217,14 @@ erDiagram
 | `id` | `uuid` | PK, NOT NULL, DEFAULT gen_random_uuid() | 내부 식별자 |
 | `group_id` | `uuid` | NOT NULL, FK → groups.id ON DELETE RESTRICT | 초대 대상 그룹 |
 | `inviter_id` | `uuid` | NOT NULL, FK → users.id ON DELETE RESTRICT | 초대한 사용자 (MANAGER) |
-| `invitee_username` | `varchar(20)` | NOT NULL | 초대받는 사용자의 username |
+| `invitee_id` | `uuid` | NOT NULL, FK → users.id ON DELETE RESTRICT | 초대받는 사용자 |
 | `status` | `varchar(10)` | NOT NULL, DEFAULT 'PENDING', CHECK (status IN ('PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED')) | `PENDING` \| `ACCEPTED` \| `DECLINED` \| `EXPIRED` |
 | `created_at` | `timestamptz` | NOT NULL, DEFAULT now() | 초대 생성 시각 (UTC) |
 | `expires_at` | `timestamptz` | NOT NULL | 초대 만료 시각 (UTC). `created_at + 7일` |
 | `responded_at` | `timestamptz` | NULL 허용 | 수락·거절 시각 (UTC) |
 
 **비즈니스 규칙 참조**
-- BR-03: MANAGER만 초대 발송 가능. `username`으로 검색
+- BR-03: MANAGER만 초대 발송 가능. `username`으로 사용자 조회 후 `invitee_id`(uuid)로 저장
 - FR-I02: 초대 유효기간 7일. 경과 후 1시간 이내 배치로 `EXPIRED` 전환 (NFR-A04)
 - FR-I05: 동일 대상에 `PENDING` 초대 존재 시 중복 초대 차단 (409)
 
@@ -383,7 +383,7 @@ erDiagram
 
 | 전략 | 적용 대상 FK | 근거 |
 |------|------------|------|
-| `ON DELETE RESTRICT` | User를 참조하는 모든 FK (`groups.created_by`, `group_members.user_id`, `invitations.inviter_id`, `expenses.paid_by`, `expenses.created_by`, `expense_splits.user_id`, `settlements.created_by`, `settlement_details.user_id`, `messages.recipient_user_id`) | BR-12: User 물리 삭제 없음. 소프트 삭제(`inactive`)만 사용하므로 참조 행이 존재할 수 없어 RESTRICT는 실질적 방어선 |
+| `ON DELETE RESTRICT` | User를 참조하는 모든 FK (`groups.created_by`, `group_members.user_id`, `invitations.inviter_id`, `invitations.invitee_id`, `expenses.paid_by`, `expenses.created_by`, `expense_splits.user_id`, `settlements.created_by`, `settlement_details.user_id`, `messages.recipient_user_id`) | BR-12: User 물리 삭제 없음. 소프트 삭제(`inactive`)만 사용하므로 참조 행이 존재할 수 없어 RESTRICT는 실질적 방어선 |
 | `ON DELETE RESTRICT` | Group을 참조하는 FK (`group_members.group_id`, `invitations.group_id`, `categories.group_id`, `expenses.group_id`, `settlements.group_id`) | 그룹도 소프트 삭제(`status = inactive`). 물리 삭제 없음 |
 | `ON DELETE RESTRICT` | `expenses.category_id` | BR-11: 카테고리 삭제 전 애플리케이션 트랜잭션이 먼저 `기타` ID로 UPDATE한 뒤 삭제. DB는 최후 방어선으로 RESTRICT 유지 |
 | `ON DELETE CASCADE` | `expense_splits.expense_id` | 지출 삭제 시 해당 지출의 분담금도 논리적으로 함께 소멸 |
@@ -496,3 +496,4 @@ PENDING ──▶ ACCEPTED   (초대받은 사용자가 수락, AC-I4)
 |------|------|----------|--------|
 | 1.0 | 2026-06-18 | 최초 작성 — 10개 엔티티 ERD, 엔티티 상세 설명, 주요 관계 설명 작성 | stepanowon |
 | 1.1 | 2026-06-18 | P1~P5 보완 — FK ON DELETE 전략 명시, enum CHECK 추가, balance GENERATED COLUMN 변경, DR-03/05 CHECK 전략 명시, GroupMember 삭제 정책 명확화 | stepanowon |
+| 1.2 | 2026-06-18 | invitations.invitee_username → invitee_id(uuid FK) 변경 — API 구현 중 username 저장 대신 user_id FK로 정규화 결정 | stepanowon |

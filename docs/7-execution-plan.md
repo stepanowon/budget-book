@@ -40,9 +40,9 @@
 | 도메인 | 태스크 수 | S | M | L |
 |--------|---------|---|---|---|
 | DB | 14개 | 10 | 3 | 1 |
-| BE | 29개 | 8 | 15 | 6 |
+| BE | 30개 | 9 | 15 | 6 |
 | FE | 30개 | 12 | 14 | 4 |
-| **합계** | **73개** | **30** | **32** | **11** |
+| **합계** | **74개** | **31** | **32** | **11** |
 
 ---
 
@@ -243,23 +243,23 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `S` | 의존성: 없음
 
 **완료 조건**
-- [ ] npm run dev 실행 시 서버 정상 기동, GET /api/v1/health에 200 응답
-- [ ] 필수 환경변수 누락 시 프로세스 종료
-- [ ] ESLint, Prettier, tsc --noEmit 오류 없이 통과
-- [ ] .env.example에 모든 필수 환경변수 키와 설명 주석 포함
+- [x] npm run dev 실행 시 서버 정상 기동, GET /api/v1/health에 200 응답
+- [x] 필수 환경변수 누락 시 프로세스 종료
+- [x] ESLint, Prettier, tsc --noEmit 오류 없이 통과
+- [x] .env.example에 모든 필수 환경변수 키와 설명 주석 포함
 
 **참조 규칙**: NFR-SEC03, NFR-SEC04
 
 ---
 
-### BE-02. 인프라 레이어 구현 — Supabase 클라이언트, JWT 유틸, bcrypt 유틸
+### BE-02. 인프라 레이어 구현 — DB 클라이언트, JWT 유틸, bcrypt 유틸
 > 복잡도: `S` | 의존성: BE-01
 
 **완료 조건**
-- [ ] signAccessToken/signRefreshToken/verifyToken 함수 올바른 payload 반환 및 만료 시 오류
-- [ ] hashPassword/comparePassword 함수가 bcrypt cost 12 이상으로 동작
-- [ ] Supabase 클라이언트가 Service Role Key로 초기화
-- [ ] JWT 시크릿 값이 로그에 출력되지 않음
+- [x] signAccessToken/signRefreshToken/verifyToken 함수 올바른 payload 반환 및 만료 시 오류
+- [x] hashPassword/comparePassword 함수가 bcrypt cost 12 이상으로 동작
+- [x] postgres.js 연결 풀(max:10)이 DATABASE_URL로 초기화 (`src/lib/db.ts`)
+- [x] JWT 시크릿 값이 로그에 출력되지 않음
 
 **참조 규칙**: NFR-SEC01, NFR-SEC02, 도메인 2.1
 
@@ -269,10 +269,10 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `S` | 의존성: BE-01
 
 **완료 조건**
-- [ ] 처리되지 않은 예외가 errorCode: INTERNAL_ERROR, HTTP 500으로 응답
-- [ ] 4xx 에러 시 errorCode, message 필드가 포함된 표준 JSON 반환
-- [ ] 5xx 에러 응답에 stack trace 미포함 확인
-- [ ] 로그에 password, token 원문이 출력되지 않음
+- [x] 처리되지 않은 예외가 errorCode: INTERNAL_ERROR, HTTP 500으로 응답
+- [x] 4xx 에러 시 errorCode, message 필드가 포함된 표준 JSON 반환
+- [x] 5xx 에러 응답에 stack trace 미포함 확인
+- [x] 로그에 password, token 원문이 출력되지 않음
 
 **참조 규칙**: 도메인 2.4, NFR-M01, NFR-M02
 
@@ -282,10 +282,10 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-01
 
 **완료 조건**
-- [ ] Supabase CLI로 마이그레이션 적용 시 모든 테이블이 오류 없이 생성
-- [ ] SYSTEM 카테고리 7개가 categories 테이블에 정확히 삽입
-- [ ] 복합 UNIQUE 제약 3개가 DB 레벨에 선언
-- [ ] balance 계산 방식(GENERATED COLUMN or 애플리케이션) 결정 및 문서화
+- [x] Supabase CLI로 마이그레이션 적용 시 모든 테이블이 오류 없이 생성
+- [x] SYSTEM 카테고리 7개가 categories 테이블에 정확히 삽입
+- [x] 복합 UNIQUE 제약 3개가 DB 레벨에 선언
+- [x] balance 계산 방식(GENERATED COLUMN or 애플리케이션) 결정 및 문서화
 
 **참조 규칙**: DR-01, DR-02, DR-06, BR-10, 도메인 3.1~3.10
 
@@ -295,10 +295,10 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `S` | 의존성: BE-01
 
 **완료 조건**
-- [ ] any 타입 사용이 없고 tsc --noEmit 통과
-- [ ] ROLE, SPLIT_TYPE, INVITATION_STATUS 상수가 as const 객체로 정의
-- [ ] errorCodes.ts에 도메인 2.4의 7개 HTTP 상태 코드별 errorCode 상수 포함
-- [ ] Express Request 확장(req.user 타입)이 src/types/express.d.ts에 정의
+- [x] any 타입 사용이 없고 tsc --noEmit 통과
+- [x] ROLE, SPLIT_TYPE, INVITATION_STATUS 상수가 as const 객체로 정의
+- [x] errorCodes.ts에 도메인 2.4의 7개 HTTP 상태 코드별 errorCode 상수 포함
+- [x] Express Request 확장(req.user 타입)이 src/types/express.d.ts에 정의
 
 **참조 규칙**: 도메인 2.1, 도메인 2.2, 도메인 2.4
 
@@ -308,10 +308,10 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-02, BE-03, BE-05
 
 **완료 조건**
-- [ ] 유효한 Access Token으로 요청 시 req.user.id가 정확히 설정
-- [ ] 토큰 없거나 만료된 경우 401 UNAUTHENTICATED 반환
-- [ ] inactive 사용자의 Access Token으로 요청 시 401 반환 (AC-U4)
-- [ ] 단위 테스트에서 토큰 없음/만료/inactive 3가지 케이스 모두 검증
+- [x] 유효한 Access Token으로 요청 시 req.user.id가 정확히 설정
+- [x] 토큰 없거나 만료된 경우 401 UNAUTHENTICATED 반환
+- [x] inactive 사용자의 Access Token으로 요청 시 401 반환 (AC-U4)
+- [x] 단위 테스트에서 토큰 없음/만료/inactive 3가지 케이스 모두 검증
 
 **참조 규칙**: 도메인 2.1, NFR-SEC04, AC-U4
 
@@ -321,10 +321,10 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-06
 
 **완료 조건**
-- [ ] MEMBER가 MANAGER 전용 엔드포인트 호출 시 403 반환
-- [ ] 그룹 미소속 사용자 요청 시 403 반환
-- [ ] 존재하지 않는 groupId 요청 시 404 반환
-- [ ] 통합 테스트에서 MEMBER의 정산 실행 시도 403 확인 (AC-S2)
+- [x] MEMBER가 MANAGER 전용 엔드포인트 호출 시 403 반환
+- [x] 그룹 미소속 사용자 요청 시 403 반환
+- [x] 존재하지 않는 groupId 요청 시 404 반환
+- [x] 통합 테스트에서 MEMBER의 정산 실행 시도 403 확인 (AC-S2)
 
 **참조 규칙**: NFR-SEC05, BR-07, AC-S2
 
@@ -334,10 +334,10 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-03, BE-05
 
 **완료 조건**
-- [ ] username 형식 위반 시 400 INVALID_INPUT 반환
-- [ ] 금액 범위 초과(0원, 10억원 이상) 시 422 VALIDATION_FAILED 반환
-- [ ] end_date < start_date 시 422 반환 (AC-G2, AC-S1)
-- [ ] 컨트롤러 진입 전 검증 완료, 컨트롤러에 검증된 데이터만 도달
+- [x] username 형식 위반 시 400 INVALID_INPUT 반환
+- [x] 금액 범위 초과(0원, 10억원 이상) 시 422 VALIDATION_FAILED 반환
+- [x] end_date < start_date 시 422 반환 (AC-G2, AC-S1)
+- [x] 컨트롤러 진입 전 검증 완료, 컨트롤러에 검증된 데이터만 도달
 
 **참조 규칙**: 도메인 5, 도메인 2.2, DR-03, DR-05, AC-G1, AC-G2, AC-S1
 
@@ -347,11 +347,11 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-05
 
 **완료 조건**
-- [ ] 10,000원 3명 EQUAL 계산 시 결제자 3,334원, 나머지 각 3,333원 (AC-ES1)
-- [ ] 7,000원 3명 EQUAL 계산 시 결제자 2,334원, 나머지 각 2,333원
-- [ ] KST 2026-06-15 → period_start UTC 변환값이 2026-06-14T15:00:00Z
-- [ ] KST 2026-06-15 → period_end UTC 변환값이 2026-06-15T14:59:59Z
-- [ ] 단위 테스트에서 위 케이스 모두 통과
+- [x] 10,000원 3명 EQUAL 계산 시 결제자 3,334원, 나머지 각 3,333원 (AC-ES1)
+- [x] 7,000원 3명 EQUAL 계산 시 결제자 2,334원, 나머지 각 2,333원
+- [x] KST 2026-06-15 → period_start UTC 변환값이 2026-06-14T15:00:00Z
+- [x] KST 2026-06-15 → period_end UTC 변환값이 2026-06-15T14:59:59Z
+- [x] 단위 테스트에서 위 케이스 모두 통과
 
 **참조 규칙**: BR-05, BR-06, 도메인 2.2, 도메인 2.3, AC-ES1
 
@@ -361,11 +361,11 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-02, BE-06, BE-08, BE-04
 
 **완료 조건**
-- [ ] 유효한 자격증명으로 가입 시 201 반환, status=active (AC-U1)
-- [ ] 중복 username 가입 시도 시 409 DUPLICATE_RESOURCE 반환 (AC-U2)
-- [ ] 중복 email 가입 시도 시 409 반환
-- [ ] 비밀번호 규칙 위반 시 422 반환
-- [ ] 응답에 비밀번호 해시가 포함되지 않음
+- [x] 유효한 자격증명으로 가입 시 201 반환, status=active (AC-U1)
+- [x] 중복 username 가입 시도 시 409 DUPLICATE_RESOURCE 반환 (AC-U2)
+- [x] 중복 email 가입 시도 시 409 반환
+- [x] 비밀번호 규칙 위반 시 422 반환
+- [x] 응답에 비밀번호 해시가 포함되지 않음
 
 **참조 규칙**: FR-U01, DR-01, 도메인 2.1, NFR-SEC02, AC-U1, AC-U2
 
@@ -375,11 +375,11 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-10
 
 **완료 조건**
-- [ ] 올바른 자격증명으로 로그인 시 Access Token 반환, Refresh Token 쿠키 설정
-- [ ] inactive 사용자 로그인 시 401 반환 (AC-U4)
-- [ ] 잘못된 비밀번호 시 401 반환
-- [ ] Refresh Token이 httpOnly 쿠키로 전송
-- [ ] DB에 Refresh Token 레코드가 저장
+- [x] 올바른 자격증명으로 로그인 시 Access Token 반환, Refresh Token 쿠키 설정
+- [x] inactive 사용자 로그인 시 401 반환 (AC-U4)
+- [x] 잘못된 비밀번호 시 401 반환
+- [x] Refresh Token이 httpOnly 쿠키로 전송
+- [x] DB에 Refresh Token 레코드가 저장
 
 **참조 규칙**: FR-U02, 도메인 2.1, NFR-SEC01, AC-U4
 
@@ -389,10 +389,10 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-11
 
 **완료 조건**
-- [ ] 유효한 Refresh Token으로 /refresh 호출 시 새 Access Token 반환
-- [ ] 만료된 Refresh Token으로 /refresh 호출 시 401 반환
-- [ ] /logout 호출 시 DB에서 Refresh Token 삭제, 쿠키 만료
-- [ ] Refresh Token 재사용 공격 시 401 반환 (DB 레코드 없음)
+- [x] 유효한 Refresh Token으로 /refresh 호출 시 새 Access Token 반환
+- [x] 만료된 Refresh Token으로 /refresh 호출 시 401 반환
+- [x] /logout 호출 시 DB에서 Refresh Token 삭제, 쿠키 만료
+- [x] Refresh Token 재사용 공격 시 401 반환 (DB 레코드 없음)
 
 **참조 규칙**: 도메인 2.1, NFR-SEC01, NFR-SEC07
 
@@ -404,11 +404,11 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 트랜잭션으로 처리한다.
 
 **완료 조건**
-- [ ] 탈퇴 후 해당 사용자의 Refresh Token이 DB에서 모두 삭제 (FR-U04, NFR-SEC07)
-- [ ] MANAGER 탈퇴 시 joined_at 가장 이른 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
-- [ ] 활성 MEMBER 없는 그룹은 inactive 전환 (AC-GM2)
-- [ ] MEMBER 탈퇴 시 GroupMember 레코드 삭제, Expense 보존 (AC-GM3)
-- [ ] 탈퇴 후 inactive 사용자의 Access Token으로 API 호출 시 401 반환
+- [x] 탈퇴 후 해당 사용자의 Refresh Token이 DB에서 모두 삭제 (FR-U04, NFR-SEC07)
+- [x] MANAGER 탈퇴 시 joined_at 가장 이른 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
+- [x] 활성 MEMBER 없는 그룹은 inactive 전환 (AC-GM2)
+- [x] MEMBER 탈퇴 시 GroupMember 레코드 삭제, Expense 보존 (AC-GM3)
+- [x] 탈퇴 후 inactive 사용자의 Access Token으로 API 호출 시 401 반환
 
 **참조 규칙**: FR-U04, BR-12, BR-13, BR-14, NFR-SEC07, AC-U3, AC-GM1, AC-GM2, AC-GM3
 
@@ -418,11 +418,11 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-07, BE-08, BE-04
 
 **완료 조건**
-- [ ] UNLIMITED 타입 그룹 생성 시 end_date=null로 저장 (AC-G3)
-- [ ] LIMITED 타입 end_date 미입력 시 422 반환 (AC-G1)
-- [ ] end_date < start_date 시 422 반환 (AC-G2)
-- [ ] 그룹 생성자가 MANAGER로 group_members에 등록
-- [ ] GET /groups 응답에 로그인 사용자 소속 그룹만 포함
+- [x] UNLIMITED 타입 그룹 생성 시 end_date=null로 저장 (AC-G3)
+- [x] LIMITED 타입 end_date 미입력 시 422 반환 (AC-G1)
+- [x] end_date < start_date 시 422 반환 (AC-G2)
+- [x] 그룹 생성자가 MANAGER로 group_members에 등록
+- [x] GET /groups 응답에 로그인 사용자 소속 그룹만 포함
 
 **참조 규칙**: FR-G01, FR-G02, FR-G03, BR-02, DR-03, AC-G1, AC-G2, AC-G3
 
@@ -432,10 +432,10 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-14
 
 **완료 조건**
-- [ ] 그룹 멤버만 GET /groups/:groupId 조회 가능, 비멤버는 403
-- [ ] MEMBER의 PATCH/DELETE 시도 시 403 반환
-- [ ] PATCH에서 LIMITED 타입 end_date < start_date 수정 시 422 반환
-- [ ] DELETE 후 group.status=inactive, 기존 지출 데이터 보존
+- [x] 그룹 멤버만 GET /groups/:groupId 조회 가능, 비멤버는 403
+- [x] MEMBER의 PATCH/DELETE 시도 시 403 반환
+- [x] PATCH에서 LIMITED 타입 end_date < start_date 수정 시 422 반환
+- [x] DELETE 후 group.status=inactive, 기존 지출 데이터 보존
 
 **참조 규칙**: FR-G04, FR-G05, BR-14, DR-03
 
@@ -445,11 +445,11 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-07, BE-08, BE-15
 
 **완료 조건**
-- [ ] 유효한 username, PENDING 초대 없음 조건에서 초대 생성 성공 (AC-I1)
-- [ ] 이미 그룹 멤버인 username 초대 시 409 반환 (AC-I2)
-- [ ] 동일 대상 PENDING 초대 존재 시 409 반환 (AC-I3)
-- [ ] expires_at이 created_at + 7일로 정확히 설정
-- [ ] MEMBER의 초대 발송 시도 시 403 반환
+- [x] 유효한 username, PENDING 초대 없음 조건에서 초대 생성 성공 (AC-I1)
+- [x] 이미 그룹 멤버인 username 초대 시 409 반환 (AC-I2)
+- [x] 동일 대상 PENDING 초대 존재 시 409 반환 (AC-I3)
+- [x] expires_at이 created_at + 7일로 정확히 설정
+- [x] MEMBER의 초대 발송 시도 시 403 반환
 
 **참조 규칙**: FR-I01, FR-I02, FR-I05, BR-03, AC-I1, AC-I2, AC-I3
 
@@ -459,11 +459,11 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-16
 
 **완료 조건**
-- [ ] PENDING 초대 수락 시 GroupMember 생성(role=MEMBER), Invitation status=ACCEPTED (AC-I4)
-- [ ] PENDING 초대 거절 시 Invitation status=DECLINED
-- [ ] 만료된 초대 수락 시도 시 422 반환
-- [ ] MANAGER의 멤버 제거 후 GroupMember 삭제, Expense 보존 (FR-I06)
-- [ ] MANAGER 본인 제거 시도 시 422 반환
+- [x] PENDING 초대 수락 시 GroupMember 생성(role=MEMBER), Invitation status=ACCEPTED (AC-I4)
+- [x] PENDING 초대 거절 시 Invitation status=DECLINED
+- [x] 만료된 초대 수락 시도 시 422 반환
+- [x] MANAGER의 멤버 제거 후 GroupMember 삭제, Expense 보존 (FR-I06)
+- [x] MANAGER 본인 제거 시도 시 422 반환
 
 **참조 규칙**: FR-I03, FR-I04, FR-I06, BR-03, AC-I4
 
@@ -473,11 +473,11 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-07, BE-08, BE-04
 
 **완료 조건**
-- [ ] SYSTEM 카테고리 삭제 시도 시 403 반환 (AC-C1, BR-10)
-- [ ] GROUP 카테고리 삭제 시 해당 카테고리 사용 Expense가 '기타'로 재분류 (AC-C2)
-- [ ] 사용 중인 지출 없는 GROUP 카테고리 삭제 시 카테고리만 삭제 (AC-C3)
-- [ ] 삭제와 재분류가 단일 트랜잭션으로 처리
-- [ ] MEMBER의 추가/삭제 시도 시 403 반환
+- [x] SYSTEM 카테고리 삭제 시도 시 403 반환 (AC-C1, BR-10)
+- [x] GROUP 카테고리 삭제 시 해당 카테고리 사용 Expense가 '기타'로 재분류 (AC-C2)
+- [x] 사용 중인 지출 없는 GROUP 카테고리 삭제 시 카테고리만 삭제 (AC-C3)
+- [x] 삭제와 재분류가 단일 트랜잭션으로 처리
+- [x] MEMBER의 추가/삭제 시도 시 403 반환
 
 **참조 규칙**: FR-C01, FR-C02, FR-C03, FR-C04, BR-10, BR-11, AC-C1, AC-C2, AC-C3
 
@@ -487,12 +487,12 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `L` | 의존성: BE-07, BE-08, BE-09, BE-18
 
 **완료 조건**
-- [ ] EQUAL 10,000원 3명 저장 시 ExpenseSplit 레코드 3,334/3,333/3,333원으로 생성 (AC-ES1)
-- [ ] CUSTOM 분담 합산 불일치 시 422 반환 (AC-ES3)
-- [ ] paid_by가 participants에 없어도 ExpenseSplit에 자동 포함 (BR-06)
-- [ ] 금액 범위 위반 시 422 반환
-- [ ] 그룹 비멤버 접근 시 403 반환
-- [ ] Expense와 ExpenseSplit이 단일 트랜잭션으로 저장
+- [x] EQUAL 10,000원 3명 저장 시 ExpenseSplit 레코드 3,334/3,333/3,333원으로 생성 (AC-ES1)
+- [x] CUSTOM 분담 합산 불일치 시 422 반환 (AC-ES3)
+- [x] paid_by가 participants에 없어도 ExpenseSplit에 자동 포함 (BR-06)
+- [x] 금액 범위 위반 시 422 반환
+- [x] 그룹 비멤버 접근 시 403 반환
+- [x] Expense와 ExpenseSplit이 단일 트랜잭션으로 저장
 
 **참조 규칙**: FR-E01, FR-E02, FR-E03, FR-E04, BR-05, BR-06, DR-04, AC-ES1, AC-ES3
 
@@ -502,11 +502,11 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-19
 
 **완료 조건**
-- [ ] 그룹 멤버 모두 전체 지출 목록 조회 가능 (BR-04)
-- [ ] date_from/date_to 필터가 KST 기준으로 적용
-- [ ] category_id 필터 동작 확인
-- [ ] 페이지네이션 파라미터 적용, 응답에 총 건수 포함
-- [ ] 비멤버 접근 시 403 반환
+- [x] 그룹 멤버 모두 전체 지출 목록 조회 가능 (BR-04)
+- [x] date_from/date_to 필터가 KST 기준으로 적용
+- [x] category_id 필터 동작 확인
+- [x] 페이지네이션 파라미터 적용, 응답에 총 건수 포함
+- [x] 비멤버 접근 시 403 반환
 
 **참조 규칙**: FR-E05, FR-E08, BR-04, 도메인 2.3
 
@@ -516,11 +516,11 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-20
 
 **완료 조건**
-- [ ] MEMBER가 본인 작성 지출 수정/삭제 성공
-- [ ] MEMBER가 타인 작성 지출 수정/삭제 시도 시 403 반환
-- [ ] 정산 완료 기간 지출 수정 후 Settlement/SettlementDetail 불변 (AC-EX1)
-- [ ] 정산 완료 기간 지출 삭제 후 Settlement/SettlementDetail 불변 (AC-EX2)
-- [ ] 수정 시 ExpenseSplit 재계산이 트랜잭션으로 처리
+- [x] MEMBER가 본인 작성 지출 수정/삭제 성공
+- [x] MEMBER가 타인 작성 지출 수정/삭제 시도 시 403 반환
+- [x] 정산 완료 기간 지출 수정 후 Settlement/SettlementDetail 불변 (AC-EX1)
+- [x] 정산 완료 기간 지출 삭제 후 Settlement/SettlementDetail 불변 (AC-EX2)
+- [x] 수정 시 ExpenseSplit 재계산이 트랜잭션으로 처리
 
 **참조 규칙**: FR-E06, FR-E07, BR-15, AC-EX1, AC-EX2
 
@@ -532,12 +532,12 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리한다.
 
 **완료 조건**
-- [ ] MEMBER의 정산 실행 시도 시 403 반환 (AC-S2)
-- [ ] period_start > period_end 시 422 반환 (AC-S1)
-- [ ] 정산 후 SettlementDetail의 balance = total_paid - total_share (DR-06)
-- [ ] 지출 0건 기간 정산 시 활성 멤버 수만큼 SettlementDetail 생성, 모두 balance=0 (AC-S3)
-- [ ] 정산 완료 후 활성 멤버 전원에게 Message 레코드 생성 (AC-M1)
-- [ ] 재정산 시 기존 Settlement 레코드 불변, 새 레코드 생성 (FR-S04)
+- [x] MEMBER의 정산 실행 시도 시 403 반환 (AC-S2)
+- [x] period_start > period_end 시 422 반환 (AC-S1)
+- [x] 정산 후 SettlementDetail의 balance = total_paid - total_share (DR-06)
+- [x] 지출 0건 기간 정산 시 활성 멤버 수만큼 SettlementDetail 생성, 모두 balance=0 (AC-S3)
+- [x] 정산 완료 후 활성 멤버 전원에게 Message 레코드 생성 (AC-M1)
+- [x] 재정산 시 기존 Settlement 레코드 불변, 새 레코드 생성 (FR-S04)
 
 **참조 규칙**: FR-S01, FR-S04, FR-S06, BR-07, BR-08, DR-05, DR-06, AC-S1, AC-S2, AC-S3, AC-S4, AC-M1
 
@@ -547,10 +547,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: BE-22
 
 **완료 조건**
-- [ ] 그룹 멤버(MANAGER/MEMBER) 모두 정산 목록 조회 가능 (FR-S05)
-- [ ] 재정산 2건 존재 시 두 Settlement 레코드가 독립적으로 목록에 표시
-- [ ] 정산 상세에 멤버별 balance 부호 정확히 반환 (양수=받을금액, 음수=낼금액)
-- [ ] 비멤버 접근 시 403 반환
+- [x] 그룹 멤버(MANAGER/MEMBER) 모두 정산 목록 조회 가능 (FR-S05)
+- [x] 재정산 2건 존재 시 두 Settlement 레코드가 독립적으로 목록에 표시
+- [x] 정산 상세에 멤버별 balance 부호 정확히 반환 (양수=받을금액, 음수=낼금액)
+- [x] 비멤버 접근 시 403 반환
 
 **참조 규칙**: FR-S02, FR-S05, DR-06
 
@@ -560,10 +560,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: BE-22
 
 **완료 조건**
-- [ ] 로그인 사용자의 수신 메시지만 반환, 타인 메시지 미노출
-- [ ] 임의 메시지 발송 API가 존재하지 않음 (AC-M2)
-- [ ] 페이지네이션 적용
-- [ ] 비인증 요청 시 401 반환
+- [x] 로그인 사용자의 수신 메시지만 반환, 타인 메시지 미노출
+- [x] 임의 메시지 발송 API가 존재하지 않음 (AC-M2)
+- [x] 페이지네이션 적용
+- [x] 비인증 요청 시 401 반환
 
 **참조 규칙**: FR-M02, FR-M03, BR-09, AC-M2
 
@@ -573,13 +573,15 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: BE-20
 
 **완료 조건**
-- [ ] 카테고리별 지출 합계가 정확히 집계
-- [ ] 멤버별 분담금 합계가 ExpenseSplit 기준으로 정확히 집계
-- [ ] period_start~period_end 필터가 KST 기준으로 동작
-- [ ] 비멤버 접근 시 403 반환
-- [ ] 응답 시간 p95 ≤ 3,000ms (NFR-P04)
+- [x] GET /groups/:groupId/reports/categories 에서 카테고리별 지출 합계 집계
+- [x] GET /groups/:groupId/reports/members 에서 멤버별 분담금 합계 집계 (ExpenseSplit 기준)
+- [x] period_start~period_end 필터가 KST 기준으로 동작
+- [x] 비멤버 접근 시 403 반환
+- [x] 응답 시간 p95 ≤ 3,000ms (NFR-P04)
+- [x] GET /groups/:groupId/reports/expenses/export 에서 지출 엑셀 다운로드
+- [x] GET /groups/:groupId/reports/settlements/:settlementId/export 에서 정산 엑셀 다운로드
 
-**참조 규칙**: FR-R01, FR-R02, NFR-P04, 도메인 2.3
+**참조 규칙**: FR-R01, FR-R02, FR-R03, FR-R04, NFR-P04, 도메인 2.3
 
 ---
 
@@ -587,10 +589,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: BE-23, BE-25
 
 **완료 조건**
-- [ ] 지출 내역 엑셀 파일에 날짜, 카테고리, 금액, 결제자, 분담 정보 포함
-- [ ] 정산 엑셀에 멤버별 total_paid, total_share, balance 컬럼 포함 (DR-06)
-- [ ] Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet 헤더 설정
-- [ ] 비멤버 접근 시 403 반환
+- [x] GET /groups/:groupId/reports/expenses/export 에서 지출 내역 엑셀 다운로드 (날짜, 카테고리, 금액, 결제자, 분담 정보 포함)
+- [x] GET /groups/:groupId/reports/settlements/:settlementId/export 에서 정산 엑셀 다운로드 (멤버별 total_paid, total_share, balance 포함)
+- [x] Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet 헤더 설정
+- [x] 비멤버 접근 시 403 반환
 
 **참조 규칙**: FR-R03, FR-R04, DR-06
 
@@ -600,10 +602,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: BE-16
 
 **완료 조건**
-- [ ] 만료 시각이 경과한 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
-- [ ] 배치 실행마다 처리 건수가 로그에 기록
-- [ ] 0건 처리 시에도 오류 없이 정상 완료
-- [ ] 배치 실패 시 error 레벨로 로그 기록, 서버 프로세스는 계속 동작
+- [x] 만료 시각이 경과한 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
+- [x] 배치 실행마다 처리 건수가 로그에 기록
+- [x] 0건 처리 시에도 오류 없이 정상 완료
+- [x] 배치 실패 시 error 레벨로 로그 기록, 서버 프로세스는 계속 동작
 
 **참조 규칙**: FR-I02, NFR-A04, AC-I5, 도메인 3.4
 
@@ -613,10 +615,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: BE-09, BE-22
 
 **완료 조건**
-- [ ] splitCalculator 단위 테스트: AC-ES1, AC-ES2 포함 5개 이상 케이스 통과
-- [ ] dateUtils 단위 테스트: KST-UTC 경계 변환 케이스 4개 이상 통과
-- [ ] settlement.service 단위 테스트: balance 계산, 0건 기간 처리 케이스 포함
-- [ ] services/ 라인 커버리지 80% 이상 달성
+- [x] splitCalculator 단위 테스트: AC-ES1, AC-ES2 포함 5개 이상 케이스 통과
+- [x] dateUtils 단위 테스트: KST-UTC 경계 변환 케이스 4개 이상 통과
+- [x] settlement.service 단위 테스트: balance 계산, 0건 기간 처리 케이스 포함
+- [x] services/ 라인 커버리지 80% 이상 달성
 
 **참조 규칙**: BR-05, BR-06, DR-06, AC-ES1, AC-S3
 
@@ -626,12 +628,24 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `L` | 의존성: BE-13, BE-21, BE-22
 
 **완료 조건**
-- [ ] 회원가입→로그인→탈퇴 플로우 통합 테스트 통과
-- [ ] 권한 거부 5개 시나리오(403/401) 통합 테스트 통과
-- [ ] 정산 후 지출 수정 시 Settlement 불변 통합 테스트 통과 (AC-EX1)
-- [ ] 전체 BE 라인 커버리지 70% 이상
+- [x] 회원가입→로그인→탈퇴 플로우 통합 테스트 통과
+- [x] 권한 거부 5개 시나리오(403/401) 통합 테스트 통과
+- [x] 정산 후 지출 수정 시 Settlement 불변 통합 테스트 통과 (AC-EX1)
+- [x] 전체 BE 라인 커버리지 70% 이상
 
 **참조 규칙**: NFR-SEC04, NFR-SEC05, AC-EX1, AC-S2
+
+---
+
+### BE-30. Swagger UI 적용 — /api-docs 엔드포인트
+> 복잡도: `S` | 의존성: BE-01
+
+**완료 조건**
+- [x] GET /api-docs 에서 Swagger UI 정상 렌더링
+- [x] swagger/swagger.json 기반 OpenAPI 3.0 명세 표시
+- [x] helmet contentSecurityPolicy 비활성화로 Swagger UI 정상 로드
+
+**참조 규칙**: 도메인 2.1
 
 ---
 
