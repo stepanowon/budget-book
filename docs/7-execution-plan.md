@@ -54,10 +54,10 @@
 pgcrypto 익스텐션과 7개 ENUM 타입을 idempotent하게 생성한다.
 
 **완료 조건**
-- [ ] pgcrypto 익스텐션이 활성화되어 gen_random_uuid() 호출 가능
-- [ ] user_status, group_type, group_status, member_role, invitation_status, category_scope, split_type 7개 ENUM 타입 생성 완료
-- [ ] 중복 실행 시 오류 없이 스킵됨 (DO $$ BEGIN ... EXCEPTION WHEN duplicate_object 패턴)
-- [ ] 각 ENUM 값이 도메인 정의서 섹션 3의 제약과 일치
+- [x] pgcrypto 익스텐션이 활성화되어 gen_random_uuid() 호출 가능
+- [x] user_status, group_type, group_status, member_role, invitation_status, category_scope, split_type 7개 ENUM 타입 생성 완료
+- [x] 중복 실행 시 오류 없이 스킵됨 (DO $$ BEGIN ... EXCEPTION WHEN duplicate_object 패턴)
+- [x] 각 ENUM 값이 도메인 정의서 섹션 3의 제약과 일치
 
 **참조 규칙**: BR-02, BR-10, BR-12, BR-13, DR-01
 
@@ -67,9 +67,9 @@ pgcrypto 익스텐션과 7개 ENUM 타입을 idempotent하게 생성한다.
 > 복잡도: `S` | 의존성: DB-01
 
 **완료 조건**
-- [ ] users 테이블 정상 생성 및 모든 제약 조건 적용
-- [ ] username 형식 CHECK 제약 (`^[a-z0-9_]{3,20}$`) 동작 확인
-- [ ] 중복 username/email INSERT 시 UNIQUE 위반 오류 발생 확인
+- [x] users 테이블 정상 생성 및 모든 제약 조건 적용
+- [x] username 형식 CHECK 제약 (`^[a-z0-9_]{3,20}$`) 동작 확인
+- [x] 중복 username/email INSERT 시 UNIQUE 위반 오류 발생 확인
 
 **참조 규칙**: DR-01, BR-12, AC-U1, AC-U2
 
@@ -81,10 +81,10 @@ pgcrypto 익스텐션과 7개 ENUM 타입을 idempotent하게 생성한다.
 자체 JWT 인증에서 Refresh Token을 DB로 관리하기 위한 테이블을 생성한다. 탈퇴·로그아웃 시 해당 레코드를 삭제하여 토큰을 무효화한다.
 
 **완료 조건**
-- [ ] refresh_tokens 테이블 생성 완료 (id, user_id FK→users.id ON DELETE CASCADE, token, expires_at, created_at)
-- [ ] UNIQUE(token) 제약으로 토큰 중복 저장 차단 확인
-- [ ] user_id ON DELETE CASCADE 동작 확인 — users 레코드 삭제(inactive 전환이 아닌 테스트용) 시 토큰 자동 삭제
-- [ ] expires_at 인덱스 생성하여 만료 토큰 조회 최적화 확인
+- [x] refresh_tokens 테이블 생성 완료 (id, user_id FK→users.id ON DELETE CASCADE, token, expires_at, created_at)
+- [x] UNIQUE(token) 제약으로 토큰 중복 저장 차단 확인
+- [x] user_id ON DELETE CASCADE 동작 확인 — users 레코드 삭제(inactive 전환이 아닌 테스트용) 시 토큰 자동 삭제
+- [x] expires_at 인덱스 생성하여 만료 토큰 조회 최적화 확인
 
 **참조 규칙**: BR-12, NFR-SEC01, NFR-SEC07, AC-U3, AC-U4
 
@@ -94,9 +94,9 @@ pgcrypto 익스텐션과 7개 ENUM 타입을 idempotent하게 생성한다.
 > 복잡도: `S` | 의존성: DB-02
 
 **완료 조건**
-- [ ] groups.chk_limited_end_date 제약이 LIMITED 타입의 end_date 누락 및 역순 날짜 차단
-- [ ] UNLIMITED 타입에서 end_date=NULL INSERT 성공
-- [ ] group_members UNIQUE(group_id, user_id) 제약으로 중복 소속 차단 확인
+- [x] groups.chk_limited_end_date 제약이 LIMITED 타입의 end_date 누락 및 역순 날짜 차단
+- [x] UNLIMITED 타입에서 end_date=NULL INSERT 성공
+- [x] group_members UNIQUE(group_id, user_id) 제약으로 중복 소속 차단 확인
 
 **참조 규칙**: BR-02, DR-02, DR-03, BR-14, AC-G1, AC-G2, AC-G3
 
@@ -108,9 +108,9 @@ pgcrypto 익스텐션과 7개 ENUM 타입을 idempotent하게 생성한다.
 SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레이어에서 강제한다.
 
 **완료 조건**
-- [ ] SYSTEM 카테고리에 group_id 값 INSERT 시 CHECK 위반으로 실패
-- [ ] GROUP 카테고리에 group_id=NULL이면 CHECK 위반으로 실패
-- [ ] 유효한 SYSTEM/GROUP 카테고리 INSERT 성공
+- [x] SYSTEM 카테고리에 group_id 값 INSERT 시 CHECK 위반으로 실패
+- [x] GROUP 카테고리에 group_id=NULL이면 CHECK 위반으로 실패
+- [x] 유효한 SYSTEM/GROUP 카테고리 INSERT 성공
 
 **참조 규칙**: BR-10, BR-11, AC-C1, AC-C2, AC-C3
 
@@ -120,9 +120,9 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 > 복잡도: `S` | 의존성: DB-04, DB-05
 
 **완료 조건**
-- [ ] expenses.total_amount 범위 외(0 또는 10억) CHECK 위반 확인
-- [ ] expense 삭제 시 expense_splits CASCADE 삭제 동작 확인
-- [ ] UNIQUE(expense_id, user_id)로 동일 지출 동일 멤버 중복 차단 확인
+- [x] expenses.total_amount 범위 외(0 또는 10억) CHECK 위반 확인
+- [x] expense 삭제 시 expense_splits CASCADE 삭제 동작 확인
+- [x] UNIQUE(expense_id, user_id)로 동일 지출 동일 멤버 중복 차단 확인
 
 **참조 규칙**: BR-04, BR-05, BR-06, BR-15, DR-04, AC-ES1, AC-ES2, AC-ES3
 
@@ -132,10 +132,10 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 > 복잡도: `S` | 의존성: DB-04
 
 **완료 조건**
-- [ ] settlements.period_start > period_end일 때 CHECK 위반 확인
-- [ ] settlement_details.balance가 GENERATED ALWAYS AS (total_paid - total_share) STORED로 자동 계산
-- [ ] total_paid, total_share 변경 시 balance 자동 갱신 확인
-- [ ] UNIQUE(settlement_id, user_id) 제약으로 정산당 멤버 중복 레코드 차단
+- [x] settlements.period_start > period_end일 때 CHECK 위반 확인
+- [x] settlement_details.balance가 GENERATED ALWAYS AS (total_paid - total_share) STORED로 자동 계산
+- [x] total_paid, total_share 변경 시 balance 자동 갱신 확인
+- [x] UNIQUE(settlement_id, user_id) 제약으로 정산당 멤버 중복 레코드 차단
 
 **참조 규칙**: BR-07, BR-08, BR-09, BR-15, DR-05, DR-06, AC-S1, AC-S3, AC-S4, AC-M1
 
@@ -145,9 +145,9 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 > 복잡도: `S` | 의존성: DB-04
 
 **완료 조건**
-- [ ] expires_at <= created_at일 때 CHECK 위반으로 INSERT 실패
-- [ ] 유효한 PENDING 초대 INSERT 성공
-- [ ] status ENUM이 PENDING/ACCEPTED/DECLINED/EXPIRED 외 값에서 오류 발생
+- [x] expires_at <= created_at일 때 CHECK 위반으로 INSERT 실패
+- [x] 유효한 PENDING 초대 INSERT 성공
+- [x] status ENUM이 PENDING/ACCEPTED/DECLINED/EXPIRED 외 값에서 오류 발생
 
 **참조 규칙**: BR-03, AC-I1, AC-I2, AC-I3, AC-I4, AC-I5
 
@@ -157,10 +157,10 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 > 복잡도: `S` | 의존성: DB-02, DB-04, DB-05, DB-06, DB-07, DB-08
 
 **완료 조건**
-- [ ] EXPLAIN ANALYZE 기준 그룹별 지출 날짜 범위 조회가 인덱스 스캔 사용
-- [ ] PENDING 초대 만료 배치 쿼리(expires_at 기준)가 인덱스 스캔 사용
-- [ ] joined_at 인덱스를 활용한 MANAGER 이양 대상 조회 최적화 확인
-- [ ] 모든 인덱스가 IF NOT EXISTS로 idempotent하게 생성
+- [x] EXPLAIN ANALYZE 기준 그룹별 지출 날짜 범위 조회가 인덱스 스캔 사용
+- [x] PENDING 초대 만료 배치 쿼리(expires_at 기준)가 인덱스 스캔 사용
+- [x] joined_at 인덱스를 활용한 MANAGER 이양 대상 조회 최적화 확인
+- [x] 모든 인덱스가 IF NOT EXISTS로 idempotent하게 생성
 
 **참조 규칙**: BR-13, BR-03, DR-05, AC-I5, NFR-P01
 
@@ -170,10 +170,10 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 > 복잡도: `S` | 의존성: DB-05
 
 **완료 조건**
-- [ ] 식비, 교통, 숙소, 쇼핑, 문화/여가, 의료, 기타 7개 카테고리 정상 적재
-- [ ] 중복 실행 시 ON CONFLICT DO NOTHING으로 오류 없이 스킵
-- [ ] '기타' 카테고리의 UUID 조회 방법 결정 및 문서화 (고정 UUID or name 조회)
-- [ ] 모든 시드 레코드의 group_id가 NULL
+- [x] 식비, 교통, 숙소, 쇼핑, 문화/여가, 의료, 기타 7개 카테고리 정상 적재
+- [x] 중복 실행 시 ON CONFLICT DO NOTHING으로 오류 없이 스킵
+- [x] '기타' 카테고리의 UUID 조회 방법 결정 및 문서화 (name='기타' 조회 방식 채택)
+- [x] 모든 시드 레코드의 group_id가 NULL
 
 **참조 규칙**: BR-10, BR-11, AC-C2
 
@@ -185,10 +185,10 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 expires_at이 현재 시각 이전인 PENDING 초대를 EXPIRED로 일괄 전환한다. NFR-A04(1시간 이내 처리)를 만족해야 한다.
 
 **완료 조건**
-- [ ] expires_at이 지난 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
-- [ ] 배치 실행 주기 최대 30분 간격으로 설정
-- [ ] 이미 최종 상태(ACCEPTED/DECLINED/EXPIRED)인 초대는 영향받지 않음
-- [ ] 배치 실행 결과(전환 건수, 실행 시각)가 로그로 기록
+- [x] expires_at이 지난 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
+- [x] 배치 실행 주기 최대 30분 간격으로 설정
+- [x] 이미 최종 상태(ACCEPTED/DECLINED/EXPIRED)인 초대는 영향받지 않음
+- [x] 배치 실행 결과(전환 건수, 실행 시각)가 로그로 기록
 
 **참조 규칙**: BR-03, AC-I5, NFR-A04
 
@@ -200,10 +200,10 @@ expires_at이 현재 시각 이전인 PENDING 초대를 EXPIRED로 일괄 전환
 transfer_manager_or_deactivate_group 함수를 구현하여 MANAGER 탈퇴 시 권한 이양 또는 그룹 비활성화를 트랜잭션으로 처리한다.
 
 **완료 조건**
-- [ ] MANAGER 탈퇴 시 joined_at 기준 최선임 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
-- [ ] 활성 MEMBER가 없으면 그룹이 inactive로 전환 (AC-GM2)
-- [ ] MEMBER 탈퇴 시 group_members 레코드만 삭제 (AC-GM3)
-- [ ] 동시 탈퇴 시나리오에서 트랜잭션 격리로 중복 MANAGER 승격 방지
+- [x] MANAGER 탈퇴 시 joined_at 기준 최선임 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
+- [x] 활성 MEMBER가 없으면 그룹이 inactive로 전환 (AC-GM2)
+- [x] MEMBER 탈퇴 시 group_members 레코드만 삭제 (AC-GM3)
+- [x] 동시 탈퇴 시나리오에서 트랜잭션 격리로 중복 MANAGER 승격 방지
 
 **참조 규칙**: BR-13, BR-14, BR-12, AC-GM1, AC-GM2, AC-GM3
 
@@ -215,10 +215,10 @@ transfer_manager_or_deactivate_group 함수를 구현하여 MANAGER 탈퇴 시 �
 delete_group_category 함수: 트랜잭션 내에서 지출을 '기타'로 UPDATE한 후 카테고리를 DELETE한다.
 
 **완료 조건**
-- [ ] GROUP 카테고리 삭제 시 해당 카테고리 지출이 '기타'로 재분류 (AC-C2)
-- [ ] 사용 중인 지출이 없는 GROUP 카테고리도 정상 삭제 (AC-C3)
-- [ ] SYSTEM 카테고리에 대해 함수 호출 시 예외 발생 (AC-C1)
-- [ ] UPDATE와 DELETE가 하나의 트랜잭션 내에서 원자적으로 처리
+- [x] GROUP 카테고리 삭제 시 해당 카테고리 지출이 '기타'로 재분류 (AC-C2)
+- [x] 사용 중인 지출이 없는 GROUP 카테고리도 정상 삭제 (AC-C3)
+- [x] SYSTEM 카테고리에 대해 함수 호출 시 예외 발생 (AC-C1)
+- [x] UPDATE와 DELETE가 하나의 트랜잭션 내에서 원자적으로 처리
 
 **참조 규칙**: BR-10, BR-11, AC-C1, AC-C2, AC-C3
 
@@ -230,9 +230,9 @@ delete_group_category 함수: 트랜잭션 내에서 지출을 '기타'로 UPDAT
 Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 체계 수립.
 
 **완료 조건**
-- [ ] supabase db status로 마이그레이션 이력 정상 추적
+- [x] supabase db status로 마이그레이션 이력 정상 추적
 - [ ] supabase db reset으로 전체 스키마가 idempotent하게 재구성
-- [ ] 마이그레이션 파일 순서가 의존성(테이블→인덱스→시드→함수→RLS)을 준수
+- [x] 마이그레이션 파일 순서가 의존성(테이블→인덱스→시드→함수→RLS)을 준수
 - [ ] 로컬 환경과 원격 Supabase 프로젝트에 동일한 마이그레이션 적용 가능
 
 ---
