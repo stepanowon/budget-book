@@ -38,6 +38,7 @@
 | [ERD](docs/6-erd.md) | 10개 엔티티 관계도, 속성·제약·FK 전략, 주요 관계 설명 |
 | [실행 계획](docs/7-execution-plan.md) | DB·BE·FE 79개 태스크, 체크박스형 완료 조건 및 의존성, 5단계 구현 순서 |
 | [와이어프레임](docs/8-wireframe.md) | 전체 화면 구조, ASCII 와이어프레임, 권한별 UI 차이, 공통 컴포넌트 명세 |
+| [Swagger 명세](swagger/swagger.json) | OpenAPI 3.0 REST API 명세 — 31개 엔드포인트, 스키마, 인증, 에러 응답 |
 
 ---
 

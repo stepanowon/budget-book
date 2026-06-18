@@ -1,0 +1,1601 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "공동 가계부 API",
+    "description": "그룹 단위 지출 기록 및 정산 서비스 REST API\n\n## 인증\nAccess Token(JWT, 1시간)을 `Authorization: Bearer <token>` 헤더로 전송한다.  \nRefresh Token(30일)은 `httpOnly` 쿠키로 관리되며 `/auth/refresh` 호출 시 자동 전송된다.\n\n## 통화\n모든 금액은 **KRW 원화 정수**로 표현한다. 소수점 없음.\n\n## 날짜·시각\n- `date` 필드: `YYYY-MM-DD` (KST 기준)\n- `datetime` 필드: ISO 8601 UTC (`2026-07-01T00:00:00Z`)\n\n## 역할\n- `MANAGER`: 그룹 수정·비활성화, 초대 발송, 멤버 제거, 카테고리 관리, 정산 실행 권한 보유\n- `MEMBER`: 지출 입력·본인 수정, 정산 조회, 리포트 조회 가능",
+    "version": "1.0.0",
+    "contact": {
+      "name": "공동 가계부 팀"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "로컬 개발 서버"
+    },
+    {
+      "url": "https://api.budget-book.example.com/api/v1",
+      "description": "운영 서버"
+    }
+  ],
+  "tags": [
+    { "name": "Health",      "description": "서버 상태 확인" },
+    { "name": "Auth",        "description": "인증 — 회원가입, 로그인, 토큰 갱신, 로그아웃, 탈퇴" },
+    { "name": "Groups",      "description": "그룹 CRUD" },
+    { "name": "Members",     "description": "그룹 멤버 조회 및 제거" },
+    { "name": "Invitations", "description": "초대 발송 및 수락/거절" },
+    { "name": "Categories",  "description": "카테고리 조회·추가·삭제" },
+    { "name": "Expenses",    "description": "지출 등록·조회·수정·삭제" },
+    { "name": "Settlements", "description": "정산 실행 및 조회" },
+    { "name": "Messages",    "description": "정산 메시지 조회" },
+    { "name": "Reports",     "description": "차트 데이터 및 엑셀 내보내기" }
+  ],
+  "security": [
+    { "BearerAuth": [] }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "서버 헬스 체크",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "정상",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/auth/signup": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "회원가입",
+        "description": "이메일 + 비밀번호 + username으로 계정을 생성한다. 성공 시 `status=active`인 사용자 레코드가 생성되며 즉시 로그인 가능하다.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SignupRequest" },
+              "example": {
+                "email": "hong@example.com",
+                "password": "P@ssw0rd!",
+                "username": "hong_gildong"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "회원가입 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그인",
+        "description": "이메일과 비밀번호로 로그인한다. Access Token을 응답 바디로, Refresh Token을 httpOnly 쿠키로 반환한다.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" },
+              "example": {
+                "email": "hong@example.com",
+                "password": "P@ssw0rd!"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "로그인 성공",
+            "headers": {
+              "Set-Cookie": {
+                "description": "refreshToken=<token>; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Access Token 갱신",
+        "description": "httpOnly 쿠키의 Refresh Token을 사용해 새 Access Token을 발급한다.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "refreshToken",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "httpOnly 쿠키로 전송되는 Refresh Token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "토큰 갱신 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "description": "새 JWT Access Token (유효기간 1시간)",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "로그아웃",
+        "description": "DB에서 Refresh Token을 삭제하고 쿠키를 만료 처리한다.",
+        "responses": {
+          "204": { "description": "로그아웃 성공" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+
+    "/auth/withdraw": {
+      "delete": {
+        "tags": ["Auth"],
+        "summary": "회원 탈퇴",
+        "description": "계정을 `inactive`로 전환한다(물리 삭제 없음). 모든 Refresh Token을 즉시 무효화하며, MANAGER인 그룹의 권한 이양 또는 그룹 비활성화를 단일 트랜잭션으로 처리한다.",
+        "responses": {
+          "204": { "description": "탈퇴 처리 완료" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+
+    "/groups": {
+      "get": {
+        "tags": ["Groups"],
+        "summary": "내 그룹 목록 조회",
+        "description": "로그인 사용자가 소속된 그룹 목록을 반환한다.",
+        "responses": {
+          "200": {
+            "description": "그룹 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "groups": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/GroupSummary" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      },
+      "post": {
+        "tags": ["Groups"],
+        "summary": "그룹 생성",
+        "description": "그룹을 생성한다. 생성자는 MANAGER로 자동 등록된다.\n\n- `LIMITED` 타입: `end_date` 필수, `start_date` 이상이어야 함(같은 날짜 허용). 미입력 시 422\n- `UNLIMITED` 타입: `end_date`는 반드시 null 또는 미입력. 입력 시 422",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateGroupRequest" },
+              "examples": {
+                "limited": {
+                  "summary": "기간 한정 그룹",
+                  "value": {
+                    "name": "제주도 여행",
+                    "type": "LIMITED",
+                    "start_date": "2026-07-01",
+                    "end_date": "2026-07-05"
+                  }
+                },
+                "unlimited": {
+                  "summary": "상시 그룹",
+                  "value": {
+                    "name": "우리 가족 가계부",
+                    "type": "UNLIMITED",
+                    "start_date": "2026-01-01"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "그룹 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GroupDetail" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/groups/{groupId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Groups"],
+        "summary": "그룹 상세 조회",
+        "description": "그룹 멤버만 접근 가능하다. 비멤버 접근 시 403을 반환한다.",
+        "responses": {
+          "200": {
+            "description": "그룹 상세",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GroupDetail" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Groups"],
+        "summary": "그룹 수정",
+        "description": "MANAGER만 그룹 이름·기간을 수정할 수 있다. `end_date < start_date`이면 422를 반환한다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateGroupRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "수정 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GroupDetail" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      },
+      "delete": {
+        "tags": ["Groups"],
+        "summary": "그룹 비활성화",
+        "description": "MANAGER만 그룹을 비활성화(소프트 삭제)할 수 있다. `status`가 `inactive`로 전환되며 기존 지출 데이터는 보존된다.",
+        "responses": {
+          "204": { "description": "비활성화 성공" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/members": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Members"],
+        "summary": "그룹 멤버 목록 조회",
+        "description": "그룹 멤버 전체 목록을 반환한다. 그룹 멤버만 접근 가능하다.",
+        "responses": {
+          "200": {
+            "description": "멤버 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "members": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/GroupMember" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/members/{userId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" },
+        { "$ref": "#/components/parameters/userId" }
+      ],
+      "delete": {
+        "tags": ["Members"],
+        "summary": "멤버 제거",
+        "description": "MANAGER만 멤버를 제거할 수 있다. 본인(MANAGER) 제거 시도 시 422를 반환한다. 제거된 멤버의 기존 지출 내역(ExpenseSplit)은 보존된다.",
+        "responses": {
+          "204": { "description": "멤버 제거 성공" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/invitations": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Invitations"],
+        "summary": "그룹 초대 목록 조회",
+        "description": "해당 그룹에서 발송된 초대 목록을 반환한다. MANAGER만 접근 가능하다.",
+        "responses": {
+          "200": {
+            "description": "초대 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invitations": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/InvitationSent" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "초대 발송",
+        "description": "MANAGER가 username으로 사용자를 초대한다. 발송 후 7일이 지나면 자동으로 `EXPIRED` 처리된다. 이미 멤버이거나 PENDING 초대가 있으면 409를 반환한다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SendInvitationRequest" },
+              "example": { "username": "kim_jisu" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "초대 발송 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvitationSent" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+
+    "/invitations": {
+      "get": {
+        "tags": ["Invitations"],
+        "summary": "내 수신 초대 목록 조회",
+        "description": "로그인 사용자가 수신한 초대 목록을 반환한다. 모든 상태(PENDING/ACCEPTED/DECLINED/EXPIRED) 포함.",
+        "responses": {
+          "200": {
+            "description": "수신 초대 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invitations": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/InvitationReceived" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+
+    "/invitations/{invitationId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/invitationId" }
+      ],
+      "patch": {
+        "tags": ["Invitations"],
+        "summary": "초대 수락 또는 거절",
+        "description": "본인이 수신한 PENDING 초대에 응답한다. 수락 시 MEMBER로 그룹에 합류한다. 만료된 초대 수락 시도 시 422를 반환한다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RespondInvitationRequest" },
+              "example": { "action": "ACCEPTED" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "응답 처리 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvitationReceived" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/categories": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Categories"],
+        "summary": "카테고리 목록 조회",
+        "description": "SYSTEM 카테고리(7개) + 해당 그룹의 GROUP 카테고리를 통합 반환한다. 그룹 멤버만 접근 가능하다.",
+        "responses": {
+          "200": {
+            "description": "카테고리 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "categories": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Category" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Categories"],
+        "summary": "그룹 카테고리 추가",
+        "description": "MANAGER만 그룹 전용 카테고리를 추가할 수 있다. 카테고리 이름은 1~20자.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCategoryRequest" },
+              "example": { "name": "도서 구입" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "카테고리 추가 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Category" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/categories/{categoryId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" },
+        { "$ref": "#/components/parameters/categoryId" }
+      ],
+      "delete": {
+        "tags": ["Categories"],
+        "summary": "그룹 카테고리 삭제",
+        "description": "MANAGER만 GROUP 카테고리를 삭제할 수 있다. SYSTEM 카테고리 삭제 시도 시 403을 반환한다. 삭제 시 해당 카테고리를 사용 중인 지출은 '기타'로 자동 재분류된다(단일 트랜잭션).",
+        "responses": {
+          "204": { "description": "카테고리 삭제 성공" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/expenses": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Expenses"],
+        "summary": "지출 목록 조회",
+        "description": "그룹 멤버 전체가 모든 지출을 조회할 수 있다. 날짜·카테고리 필터 및 페이지네이션을 지원한다.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": { "type": "string", "format": "date" },
+            "description": "조회 시작일 (KST, YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": { "type": "string", "format": "date" },
+            "description": "조회 종료일 (KST, YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "category_id",
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "카테고리 필터"
+          },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "지출 목록",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ExpenseListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Expenses"],
+        "summary": "지출 등록",
+        "description": "지출을 등록하고 분담 내역(ExpenseSplit)을 생성한다.\n\n- `EQUAL`: 금액을 참여자 수로 균등 분배하며 나머지는 결제자(`paid_by`)에게 귀속\n- `CUSTOM`: `custom_splits`의 합산이 `amount`와 일치해야 함\n- 결제자는 `participants`에 없어도 splits에 자동 포함\n- Expense와 ExpenseSplit은 단일 트랜잭션으로 저장",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateExpenseRequest" },
+              "examples": {
+                "equal": {
+                  "summary": "균등 분배",
+                  "value": {
+                    "amount": 30000,
+                    "category_id": "uuid-category",
+                    "date": "2026-07-01",
+                    "description": "점심 — 김밥천국",
+                    "paid_by": "uuid-hong",
+                    "split_type": "EQUAL",
+                    "participants": ["uuid-hong", "uuid-kim", "uuid-park"]
+                  }
+                },
+                "custom": {
+                  "summary": "개별 분담",
+                  "value": {
+                    "amount": 30000,
+                    "category_id": "uuid-category",
+                    "date": "2026-07-01",
+                    "paid_by": "uuid-hong",
+                    "split_type": "CUSTOM",
+                    "participants": ["uuid-hong", "uuid-kim", "uuid-park"],
+                    "custom_splits": [
+                      { "user_id": "uuid-hong", "amount": 15000 },
+                      { "user_id": "uuid-kim",  "amount": 8000  },
+                      { "user_id": "uuid-park", "amount": 7000  }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "지출 등록 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Expense" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/expenses/{expenseId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" },
+        { "$ref": "#/components/parameters/expenseId" }
+      ],
+      "patch": {
+        "tags": ["Expenses"],
+        "summary": "지출 수정",
+        "description": "MEMBER는 본인이 작성한 지출(`created_by`)만 수정할 수 있으며, MANAGER는 그룹 내 모든 지출을 수정할 수 있다. 수정 시 ExpenseSplit이 재계산된다(단일 트랜잭션). 정산 완료 후에도 수정 가능하나 기존 Settlement는 변경되지 않는다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateExpenseRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "지출 수정 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Expense" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      },
+      "delete": {
+        "tags": ["Expenses"],
+        "summary": "지출 삭제",
+        "description": "MEMBER는 본인이 작성한 지출만 삭제할 수 있으며, MANAGER는 그룹 내 모든 지출을 삭제할 수 있다. 정산 완료 후에도 삭제 가능하나 기존 Settlement는 변경되지 않는다.",
+        "responses": {
+          "204": { "description": "지출 삭제 성공" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/settlements": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Settlements"],
+        "summary": "정산 목록 조회",
+        "description": "그룹의 정산 내역 목록을 반환한다. 재정산 건도 독립적인 레코드로 표시된다. 그룹 멤버면 모두 조회 가능하다.",
+        "responses": {
+          "200": {
+            "description": "정산 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settlements": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/SettlementSummary" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Settlements"],
+        "summary": "정산 실행",
+        "description": "MANAGER만 정산을 실행할 수 있다. 지정 기간의 지출을 집계하여 Settlement, SettlementDetail, Message를 단일 트랜잭션으로 생성한다.\n\n- MEMBER 시도 시 403 반환\n- `period_start > period_end` 시 422 반환\n- 지출 0건인 기간도 정산 가능(모든 멤버 balance=0)\n- 재정산 시 기존 Settlement는 불변하고 새 레코드를 생성\n- 정산 완료 후 활성 멤버 전원에게 메시지 자동 발송",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateSettlementRequest" },
+              "example": {
+                "period_start": "2026-07-01",
+                "period_end": "2026-07-05"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "정산 실행 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SettlementDetail" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/settlements/{settlementId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" },
+        { "$ref": "#/components/parameters/settlementId" }
+      ],
+      "get": {
+        "tags": ["Settlements"],
+        "summary": "정산 상세 조회",
+        "description": "멤버별 결제액(`total_paid`), 분담액(`total_share`), 차액(`balance`)을 반환한다. `balance = total_paid - total_share`이며 양수는 받을 금액, 음수는 낼 금액이다.",
+        "responses": {
+          "200": {
+            "description": "정산 상세",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SettlementDetail" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/messages": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "수신 정산 메시지 목록 조회",
+        "description": "로그인 사용자가 수신한 정산 메시지 목록을 반환한다. 임의 메시지 발송 기능은 제공하지 않는다.",
+        "parameters": [
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "메시지 목록",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/reports/chart": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Reports"],
+        "summary": "차트 데이터 조회",
+        "description": "지정 기간의 카테고리별·멤버별 지출 집계 데이터를 반환한다. 응답 목표 시간: p95 ≤ 3,000ms.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period_start",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "분석 시작일 (KST, YYYY-MM-DD)"
+          },
+          {
+            "in": "query",
+            "name": "period_end",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "분석 종료일 (KST, YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "차트 데이터",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChartResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/reports/export/expenses": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Reports"],
+        "summary": "지출 내역 엑셀 내보내기",
+        "description": "지출 내역을 `.xlsx` 파일로 내보낸다. 날짜, 카테고리, 금액, 결제자, 분담 정보 컬럼 포함.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period_start",
+            "schema": { "type": "string", "format": "date" },
+            "description": "조회 시작일 (선택)"
+          },
+          {
+            "in": "query",
+            "name": "period_end",
+            "schema": { "type": "string", "format": "date" },
+            "description": "조회 종료일 (선택)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "엑셀 파일",
+            "headers": {
+              "Content-Disposition": {
+                "schema": { "type": "string" },
+                "example": "attachment; filename=expenses_group_2026-07.xlsx"
+              }
+            },
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
+    "/groups/{groupId}/reports/export/settlements/{settlementId}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" },
+        { "$ref": "#/components/parameters/settlementId" }
+      ],
+      "get": {
+        "tags": ["Reports"],
+        "summary": "정산 금액 엑셀 내보내기",
+        "description": "정산 결과를 `.xlsx` 파일로 내보낸다. 멤버별 `total_paid`, `total_share`, `balance` 컬럼 포함.",
+        "responses": {
+          "200": {
+            "description": "엑셀 파일",
+            "headers": {
+              "Content-Disposition": {
+                "schema": { "type": "string" },
+                "example": "attachment; filename=settlement_group_2026-07.xlsx"
+              }
+            },
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Access Token (유효기간 1시간). `/auth/login` 응답의 `accessToken` 값을 사용한다."
+      }
+    },
+
+    "parameters": {
+      "groupId": {
+        "in": "path",
+        "name": "groupId",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "그룹 ID"
+      },
+      "userId": {
+        "in": "path",
+        "name": "userId",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "사용자 ID"
+      },
+      "invitationId": {
+        "in": "path",
+        "name": "invitationId",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "초대 ID"
+      },
+      "categoryId": {
+        "in": "path",
+        "name": "categoryId",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "카테고리 ID"
+      },
+      "expenseId": {
+        "in": "path",
+        "name": "expenseId",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "지출 ID"
+      },
+      "settlementId": {
+        "in": "path",
+        "name": "settlementId",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "정산 ID"
+      },
+      "page": {
+        "in": "query",
+        "name": "page",
+        "schema": { "type": "integer", "minimum": 1, "default": 1 },
+        "description": "페이지 번호"
+      },
+      "limit": {
+        "in": "query",
+        "name": "limit",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 },
+        "description": "페이지당 항목 수"
+      }
+    },
+
+    "schemas": {
+      "SignupRequest": {
+        "type": "object",
+        "required": ["email", "password", "username"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "description": "RFC 5322 형식 이메일 (서비스 전체 고유)",
+            "example": "hong@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "description": "8자 이상, 영문·숫자·특수문자 각 1자 이상 포함",
+            "example": "P@ssw0rd!"
+          },
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20,
+            "pattern": "^[a-z0-9_]{3,20}$",
+            "description": "영문 소문자·숫자·밑줄만 허용, 3~20자, 서비스 전체 고유",
+            "example": "hong_gildong"
+          }
+        }
+      },
+
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "hong@example.com" },
+          "password": { "type": "string", "example": "P@ssw0rd!" }
+        }
+      },
+
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT Access Token (유효기간 1시간)",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "user": { "$ref": "#/components/schemas/UserResponse" }
+        }
+      },
+
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "id":         { "type": "string", "format": "uuid" },
+          "email":      { "type": "string", "format": "email" },
+          "username":   { "type": "string", "example": "hong_gildong" },
+          "status":     { "type": "string", "enum": ["active", "inactive"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+
+      "GroupSummary": {
+        "type": "object",
+        "properties": {
+          "id":         { "type": "string", "format": "uuid" },
+          "name":       { "type": "string", "example": "제주도 여행" },
+          "type":       { "type": "string", "enum": ["LIMITED", "UNLIMITED"] },
+          "status":     { "type": "string", "enum": ["active", "inactive"] },
+          "start_date": { "type": "string", "format": "date", "example": "2026-07-01" },
+          "end_date":   { "type": "string", "format": "date", "nullable": true, "example": "2026-07-05" },
+          "my_role":    { "type": "string", "enum": ["MANAGER", "MEMBER"] }
+        }
+      },
+
+      "GroupDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/GroupSummary" },
+          {
+            "type": "object",
+            "properties": {
+              "created_by": { "type": "string", "format": "uuid" },
+              "created_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      },
+
+      "CreateGroupRequest": {
+        "type": "object",
+        "required": ["name", "type", "start_date"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "제주도 여행"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["LIMITED", "UNLIMITED"]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-07-01"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "LIMITED 타입이면 필수(start_date 이상이어야 함, 같은 날짜 허용). UNLIMITED이면 반드시 null. 조건 위반 시 422",
+            "example": "2026-07-05"
+          }
+        }
+      },
+
+      "UpdateGroupRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "start_date 이상이어야 함(같은 날짜 허용). UNLIMITED 그룹은 null 유지."
+          }
+        }
+      },
+
+      "GroupMember": {
+        "type": "object",
+        "properties": {
+          "user_id":   { "type": "string", "format": "uuid" },
+          "username":  { "type": "string", "example": "kim_jisu" },
+          "role":      { "type": "string", "enum": ["MANAGER", "MEMBER"] },
+          "joined_at": { "type": "string", "format": "date-time" }
+        }
+      },
+
+      "SendInvitationRequest": {
+        "type": "object",
+        "required": ["username"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "초대할 사용자의 username (active 사용자만 가능)",
+            "example": "kim_jisu"
+          }
+        }
+      },
+
+      "InvitationSent": {
+        "type": "object",
+        "properties": {
+          "id":               { "type": "string", "format": "uuid" },
+          "group_id":         { "type": "string", "format": "uuid" },
+          "invitee_username": { "type": "string", "example": "kim_jisu" },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "ACCEPTED", "DECLINED", "EXPIRED"]
+          },
+          "expires_at":  { "type": "string", "format": "date-time", "description": "발송 후 7일" },
+          "created_at":  { "type": "string", "format": "date-time" },
+          "responded_at": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+
+      "InvitationReceived": {
+        "type": "object",
+        "properties": {
+          "id":              { "type": "string", "format": "uuid" },
+          "group_id":        { "type": "string", "format": "uuid" },
+          "group_name":      { "type": "string", "example": "제주도 여행" },
+          "inviter_username":{ "type": "string", "example": "hong_gildong" },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "ACCEPTED", "DECLINED", "EXPIRED"]
+          },
+          "expires_at":   { "type": "string", "format": "date-time" },
+          "created_at":   { "type": "string", "format": "date-time" },
+          "responded_at": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+
+      "RespondInvitationRequest": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["ACCEPTED", "DECLINED"],
+            "description": "수락(ACCEPTED) 또는 거절(DECLINED)"
+          }
+        }
+      },
+
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id":       { "type": "string", "format": "uuid" },
+          "name":     { "type": "string", "example": "식비" },
+          "scope":    { "type": "string", "enum": ["SYSTEM", "GROUP"] },
+          "group_id": { "type": "string", "format": "uuid", "nullable": true }
+        }
+      },
+
+      "CreateCategoryRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "도서 구입"
+          }
+        }
+      },
+
+      "ExpenseSplit": {
+        "type": "object",
+        "properties": {
+          "user_id":  { "type": "string", "format": "uuid" },
+          "username": { "type": "string", "example": "kim_jisu" },
+          "amount":   { "type": "integer", "minimum": 0, "example": 10000 }
+        }
+      },
+
+      "Expense": {
+        "type": "object",
+        "properties": {
+          "id":             { "type": "string", "format": "uuid" },
+          "group_id":       { "type": "string", "format": "uuid" },
+          "amount":         { "type": "integer", "minimum": 1, "maximum": 999999999, "example": 30000 },
+          "category_id":    { "type": "string", "format": "uuid" },
+          "category_name":  { "type": "string", "example": "식비" },
+          "date":           { "type": "string", "format": "date", "example": "2026-07-01" },
+          "description":    { "type": "string", "nullable": true, "maxLength": 200, "example": "점심 — 김밥천국" },
+          "paid_by":        { "type": "string", "format": "uuid" },
+          "paid_by_username":{ "type": "string", "example": "hong_gildong" },
+          "split_type":     { "type": "string", "enum": ["EQUAL", "CUSTOM"] },
+          "splits": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ExpenseSplit" }
+          },
+          "created_by":     { "type": "string", "format": "uuid" },
+          "created_at":     { "type": "string", "format": "date-time" }
+        }
+      },
+
+      "CreateExpenseRequest": {
+        "type": "object",
+        "required": ["amount", "category_id", "date", "paid_by", "split_type", "participants"],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999999999,
+            "description": "KRW 원화 정수",
+            "example": 30000
+          },
+          "category_id": { "type": "string", "format": "uuid" },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "KST 기준 날짜 (YYYY-MM-DD)",
+            "example": "2026-07-01"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "nullable": true,
+            "example": "점심 — 김밥천국"
+          },
+          "paid_by": {
+            "type": "string",
+            "format": "uuid",
+            "description": "결제자 user_id (participants 미포함 시에도 splits에 자동 추가)"
+          },
+          "split_type": { "type": "string", "enum": ["EQUAL", "CUSTOM"] },
+          "participants": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" },
+            "minItems": 1,
+            "description": "분담 참여자 user_id 목록"
+          },
+          "custom_splits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["user_id", "amount"],
+              "properties": {
+                "user_id": { "type": "string", "format": "uuid" },
+                "amount":  { "type": "integer", "minimum": 0 }
+              }
+            },
+            "description": "CUSTOM 분담 시 필수. 합산이 amount와 일치해야 함"
+          }
+        }
+      },
+
+      "UpdateExpenseRequest": {
+        "type": "object",
+        "properties": {
+          "amount":       { "type": "integer", "minimum": 1, "maximum": 999999999 },
+          "category_id":  { "type": "string", "format": "uuid" },
+          "date":         { "type": "string", "format": "date" },
+          "description":  { "type": "string", "maxLength": 200, "nullable": true },
+          "paid_by":      { "type": "string", "format": "uuid" },
+          "split_type":   { "type": "string", "enum": ["EQUAL", "CUSTOM"] },
+          "participants": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
+          "custom_splits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["user_id", "amount"],
+              "properties": {
+                "user_id": { "type": "string", "format": "uuid" },
+                "amount":  { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      },
+
+      "ExpenseListResponse": {
+        "type": "object",
+        "properties": {
+          "expenses": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Expense" }
+          },
+          "total": { "type": "integer", "description": "필터 기준 전체 지출 건수", "example": 42 },
+          "page":  { "type": "integer", "example": 1 },
+          "limit": { "type": "integer", "example": 20 }
+        }
+      },
+
+      "CreateSettlementRequest": {
+        "type": "object",
+        "required": ["period_start", "period_end"],
+        "properties": {
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "description": "정산 시작일 (KST, YYYY-MM-DD)",
+            "example": "2026-07-01"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "description": "정산 종료일 (KST, YYYY-MM-DD, period_start 이상이어야 함 — 같은 날짜 허용, DR-05). 위반 시 422",
+            "example": "2026-07-05"
+          }
+        }
+      },
+
+      "SettlementMemberDetail": {
+        "type": "object",
+        "properties": {
+          "user_id":     { "type": "string", "format": "uuid" },
+          "username":    { "type": "string", "example": "hong_gildong" },
+          "total_paid":  { "type": "integer", "minimum": 0, "description": "기간 내 결제 총액", "example": 450000 },
+          "total_share": { "type": "integer", "minimum": 0, "description": "기간 내 분담 총액", "example": 260000 },
+          "balance": {
+            "type": "integer",
+            "description": "total_paid - total_share. 양수=받을 금액, 음수=낼 금액",
+            "example": 190000
+          }
+        }
+      },
+
+      "SettlementSummary": {
+        "type": "object",
+        "properties": {
+          "id":                  { "type": "string", "format": "uuid" },
+          "period_start":        { "type": "string", "format": "date", "example": "2026-07-01" },
+          "period_end":          { "type": "string", "format": "date", "example": "2026-07-05" },
+          "settled_at":          { "type": "string", "format": "date-time" },
+          "total_expense_amount":{ "type": "integer", "description": "기간 내 지출 총합", "example": 780000 }
+        }
+      },
+
+      "SettlementDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/SettlementSummary" },
+          {
+            "type": "object",
+            "properties": {
+              "group_id":   { "type": "string", "format": "uuid" },
+              "created_by": { "type": "string", "format": "uuid" },
+              "details": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/SettlementMemberDetail" }
+              }
+            }
+          }
+        ]
+      },
+
+      "MessageItem": {
+        "type": "object",
+        "properties": {
+          "id":            { "type": "string", "format": "uuid" },
+          "group_id":      { "type": "string", "format": "uuid" },
+          "group_name":    { "type": "string", "example": "우리 가족 가계부" },
+          "settlement_id": { "type": "string", "format": "uuid" },
+          "period_start":  { "type": "string", "format": "date", "example": "2026-06-01" },
+          "period_end":    { "type": "string", "format": "date", "example": "2026-06-30" },
+          "total_paid":    { "type": "integer", "example": 320000 },
+          "total_share":   { "type": "integer", "example": 250000 },
+          "balance": {
+            "type": "integer",
+            "description": "양수=받을 금액, 음수=낼 금액",
+            "example": 70000
+          },
+          "sent_at": { "type": "string", "format": "date-time" }
+        }
+      },
+
+      "MessageListResponse": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MessageItem" }
+          },
+          "total": { "type": "integer", "example": 5 },
+          "page":  { "type": "integer", "example": 1 },
+          "limit": { "type": "integer", "example": 20 }
+        }
+      },
+
+      "ChartCategoryItem": {
+        "type": "object",
+        "properties": {
+          "category_id":   { "type": "string", "format": "uuid" },
+          "category_name": { "type": "string", "example": "식비" },
+          "total":         { "type": "integer", "description": "해당 카테고리 지출 합계", "example": 300000 }
+        }
+      },
+
+      "ChartMemberItem": {
+        "type": "object",
+        "properties": {
+          "user_id":     { "type": "string", "format": "uuid" },
+          "username":    { "type": "string", "example": "hong_gildong" },
+          "total_share": { "type": "integer", "description": "해당 멤버 분담 합계", "example": 260000 }
+        }
+      },
+
+      "ChartResponse": {
+        "type": "object",
+        "properties": {
+          "period_start": { "type": "string", "format": "date" },
+          "period_end":   { "type": "string", "format": "date" },
+          "by_category": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ChartCategoryItem" }
+          },
+          "by_member": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ChartMemberItem" }
+          }
+        }
+      },
+
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errorCode": {
+            "type": "string",
+            "enum": [
+              "UNAUTHENTICATED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "DUPLICATE_RESOURCE",
+              "VALIDATION_FAILED",
+              "INVALID_INPUT",
+              "BAD_REQUEST",
+              "INTERNAL_ERROR"
+            ],
+            "description": "에러 코드"
+          },
+          "message": {
+            "type": "string",
+            "description": "사람이 읽을 수 있는 에러 설명",
+            "example": "이미 사용 중인 사용자명입니다."
+          }
+        }
+      }
+    },
+
+    "responses": {
+      "BadRequest": {
+        "description": "잘못된 요청 형식 — JSON 파싱 실패 또는 필수 필드 누락",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "errorCode": "BAD_REQUEST",
+              "message": "요청 형식이 올바르지 않습니다."
+            }
+          }
+        }
+      },
+      "Unauthenticated": {
+        "description": "인증 실패 — 토큰 없음·만료 또는 inactive 계정",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "errorCode": "UNAUTHENTICATED",
+              "message": "로그인이 필요하거나 세션이 만료되었습니다."
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "권한 없음 — 역할 부족 또는 리소스 접근 불가",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "errorCode": "FORBIDDEN",
+              "message": "해당 기능을 사용할 권한이 없습니다."
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "리소스를 찾을 수 없음",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "errorCode": "NOT_FOUND",
+              "message": "요청하신 정보를 찾을 수 없습니다."
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "중복 충돌 — 이미 존재하는 리소스",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "errorCode": "DUPLICATE_RESOURCE",
+              "message": "이미 사용 중인 사용자명입니다."
+            }
+          }
+        }
+      },
+      "ValidationFailed": {
+        "description": "입력 값 검증 실패",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": {
+              "errorCode": "VALIDATION_FAILED",
+              "message": "종료일은 시작일 이후여야 합니다."
+            }
+          }
+        }
+      }
+    }
+  }
+}
