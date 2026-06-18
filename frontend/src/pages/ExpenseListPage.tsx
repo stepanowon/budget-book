@@ -1,0 +1,270 @@
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Plus, Download } from 'lucide-react';
+import { useExpenses, useDeleteExpense } from '@/hooks/useExpenses';
+import { useCategories } from '@/hooks/useCategories';
+import { useGroupMembers, useGroup } from '@/hooks/useGroups';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/contexts/ToastContext';
+import { ROUTES } from '@/constants/routes';
+import ExpenseCard from '@/components/expenses/ExpenseCard';
+import EmptyState from '@/components/common/EmptyState';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import Button from '@/components/common/Button';
+import Modal from '@/components/common/Modal';
+import * as reportApi from '@/api/reportApi';
+
+export default function ExpenseListPage() {
+  const { groupId = '' } = useParams<{ groupId: string }>();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { showToast } = useToast();
+
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const filters = {
+    ...(dateFrom && { date_from: dateFrom }),
+    ...(dateTo && { date_to: dateTo }),
+    ...(categoryFilter && { category_id: categoryFilter }),
+  };
+
+  const { data: expenses = [], isLoading } = useExpenses(groupId);
+  const { data: categories = [] } = useCategories(groupId);
+  const { data: members = [] } = useGroupMembers(groupId);
+  const { data: group } = useGroup(groupId);
+  const deleteExpense = useDeleteExpense(groupId);
+
+  // 필터는 클라이언트 사이드로 적용 (API가 지원하면 setFilters 사용)
+  const filteredExpenses = expenses.filter((e) => {
+    if (filters.date_from && e.date < filters.date_from) return false;
+    if (filters.date_to && e.date > filters.date_to) return false;
+    if (filters.category_id && e.category_id !== filters.category_id) return false;
+    return true;
+  });
+
+  const currentRole =
+    members.find((m) => m.user_id === currentUser?.id)?.role ?? 'MEMBER';
+
+  function getMemberUsername(userId: string): string {
+    return members.find((m) => m.user_id === userId)?.username ?? userId;
+  }
+
+  function handleEdit(expenseId: string) {
+    void navigate(ROUTES.GROUP_EXPENSE_EDIT(groupId, expenseId));
+  }
+
+  function handleDeleteConfirm() {
+    if (!deleteTargetId) return;
+    deleteExpense.mutate(deleteTargetId, {
+      onSuccess: () => {
+        showToast('지출이 삭제되었습니다.', 'success');
+        setDeleteTargetId(null);
+      },
+      onError: () => {
+        showToast('삭제 중 오류가 발생했습니다.', 'error');
+        setDeleteTargetId(null);
+      },
+    });
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const blob = await reportApi.exportExpensesExcel(groupId, filters);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const groupName = group?.name ?? groupId;
+      const dateRange = `${dateFrom || 'all'}_${dateTo || 'all'}`;
+      a.download = `지출내역_${groupName}_${dateRange}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast('내보내기 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <>
+      <style>{`
+        .expense-list-page { display: flex; flex-direction: column; gap: var(--space-6); }
+        .expense-list-page__header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: var(--space-3);
+        }
+        .expense-list-page__title {
+          font-size: 20px;
+          font-weight: 600;
+          color: var(--color-text-primary);
+          margin: 0;
+        }
+        .expense-list-page__header-actions {
+          display: flex;
+          gap: var(--space-2);
+        }
+        .expense-list-page__filters {
+          display: flex;
+          gap: var(--space-3);
+          flex-wrap: wrap;
+          align-items: flex-end;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          border-radius: var(--border-radius);
+          padding: var(--space-4);
+        }
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-1);
+          min-width: 140px;
+        }
+        .filter-group label {
+          font-size: 12px;
+          color: var(--color-text-secondary);
+          font-weight: 500;
+        }
+        .filter-group input,
+        .filter-group select {
+          padding: 6px 10px;
+          border: 1px solid var(--color-border);
+          border-radius: var(--border-radius);
+          font-size: 14px;
+          font-family: var(--font-family);
+          min-height: 44px;
+          color: var(--color-text-primary);
+          background: var(--color-surface);
+        }
+        .expense-list-page__list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+        .expense-list-page__loading {
+          display: flex;
+          justify-content: center;
+          padding: var(--space-8);
+        }
+      `}</style>
+      <div className="expense-list-page">
+        <div className="expense-list-page__header">
+          <h1 className="expense-list-page__title">지출 목록</h1>
+          <div className="expense-list-page__header-actions">
+            <Button
+              variant="outlined"
+              size="sm"
+              onClick={() => void handleExport()}
+              loading={exporting}
+            >
+              <Download size={14} />
+              엑셀 내보내기
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => void navigate(ROUTES.GROUP_EXPENSE_NEW(groupId))}
+            >
+              <Plus size={14} />
+              지출 등록
+            </Button>
+          </div>
+        </div>
+
+        <div className="expense-list-page__filters">
+          <div className="filter-group">
+            <label htmlFor="date-from">시작일</label>
+            <input
+              id="date-from"
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+          </div>
+          <div className="filter-group">
+            <label htmlFor="date-to">종료일</label>
+            <input
+              id="date-to"
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </div>
+          <div className="filter-group">
+            <label htmlFor="category-filter">카테고리</label>
+            <select
+              id="category-filter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">전체</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="expense-list-page__loading">
+            <LoadingSpinner />
+          </div>
+        ) : filteredExpenses.length === 0 ? (
+          <EmptyState
+            title="지출 내역이 없습니다"
+            description="첫 번째 지출을 등록해 보세요."
+            action={{
+              label: '지출 등록',
+              onClick: () => void navigate(ROUTES.GROUP_EXPENSE_NEW(groupId)),
+            }}
+          />
+        ) : (
+          <div className="expense-list-page__list">
+            {filteredExpenses.map((expense) => (
+              <ExpenseCard
+                key={expense.id}
+                expense={expense}
+                currentUserId={currentUser?.id ?? ''}
+                currentUserRole={currentRole}
+                categories={categories}
+                paidByUsername={getMemberUsername(expense.paid_by)}
+                onEdit={handleEdit}
+                onDelete={(id) => setDeleteTargetId(id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Modal
+        isOpen={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        title="지출 삭제"
+        footer={
+          <>
+            <Button variant="outlined" onClick={() => setDeleteTargetId(null)}>
+              취소
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              loading={deleteExpense.isPending}
+            >
+              삭제
+            </Button>
+          </>
+        }
+      >
+        <p>이 지출 내역을 삭제하시겠습니까?</p>
+      </Modal>
+    </>
+  );
+}

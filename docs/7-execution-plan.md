@@ -655,10 +655,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: 없음
 
 **완료 조건**
-- [ ] vite.config.ts에서 경로 별칭('@/') 설정 완료
-- [ ] tsconfig.json에 noImplicitAny, strictNullChecks 적용
-- [ ] ESLint no-explicit-any 규칙 활성화 및 Prettier 설정
-- [ ] src/constants/roles.ts, expense.ts, routes.ts에 도메인 상수 정의
+- [x] vite.config.ts에서 경로 별칭('@/') 설정 완료
+- [x] tsconfig.json에 noImplicitAny, strictNullChecks 적용
+- [x] ESLint no-explicit-any 규칙 활성화 및 Prettier 설정
+- [x] src/constants/roles.ts, expense.ts, routes.ts에 도메인 상수 정의
 
 ---
 
@@ -666,10 +666,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-01
 
 **완료 조건**
-- [ ] App.tsx에 전체 라우트 트리 구성 완료
-- [ ] ProtectedRoute 컴포넌트가 비인증 사용자를 /login으로 리다이렉트
-- [ ] 404 Fallback 페이지 구현
-- [ ] routes.ts 상수를 통해 하드코딩된 경로 문자열 사용 금지
+- [x] App.tsx에 전체 라우트 트리 구성 완료
+- [x] ProtectedRoute 컴포넌트가 비인증 사용자를 /login으로 리다이렉트
+- [x] 404 Fallback 페이지 구현
+- [x] routes.ts 상수를 통해 하드코딩된 경로 문자열 사용 금지
 
 ---
 
@@ -677,11 +677,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-01
 
 **완료 조건**
-- [ ] axios 인스턴스가 src/api/client.ts에 단일 생성
-- [ ] 요청 인터셉터에서 Access Token 자동 주입 구현
-- [ ] 401 응답 시 /auth/refresh 호출 후 원본 요청 재시도 로직 구현
-- [ ] 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
-- [ ] localStorage에 Access Token 저장 금지 (메모리 또는 sessionStorage 사용)
+- [x] axios 인스턴스가 src/api/client.ts에 단일 생성
+- [x] 요청 인터셉터에서 Access Token 자동 주입 구현
+- [x] 401 응답 시 /auth/refresh 호출 후 원본 요청 재시도 로직 구현
+- [x] 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
+- [x] localStorage에 Access Token 저장 금지 (메모리 또는 sessionStorage 사용)
 
 **참조 규칙**: NFR-SEC01
 
@@ -691,10 +691,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-01
 
 **완료 조건**
-- [ ] QueryClientProvider가 App.tsx에 등록 완료
-- [ ] domain.ts에 10개 도메인 엔티티 타입 정의 (any 사용 없음)
-- [ ] api.ts에 각 API 엔드포인트별 요청/응답 DTO 타입 정의
-- [ ] ROLE, SPLIT_TYPE, INVITATION_STATUS 등 as const 객체로 열거형 정의
+- [x] QueryClientProvider가 App.tsx에 등록 완료
+- [x] domain.ts에 10개 도메인 엔티티 타입 정의 (any 사용 없음)
+- [x] api.ts에 각 API 엔드포인트별 요청/응답 DTO 타입 정의
+- [x] ROLE, SPLIT_TYPE, INVITATION_STATUS 등 as const 객체로 열거형 정의
 
 ---
 
@@ -702,10 +702,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-01
 
 **완료 조건**
-- [ ] formatCurrency(1000) === '1,000원' 등 단위 테스트 90% 이상 커버리지
-- [ ] splitCalculator가 균등 분배 나머지를 결제자에게 귀속하는 로직 검증 완료
-- [ ] dateUtils에서 KST 기준 날짜를 API 전송 시 YYYY-MM-DD 문자열로 처리
-- [ ] validators.ts가 금액 범위, 날짜 역전 등 클라이언트 사이드 검증 함수 제공
+- [x] formatCurrency(1000) === '1,000원' 등 단위 테스트 90% 이상 커버리지
+- [x] splitCalculator가 균등 분배 나머지를 결제자에게 귀속하는 로직 검증 완료
+- [x] dateUtils에서 KST 기준 날짜를 API 전송 시 YYYY-MM-DD 문자열로 처리
+- [x] validators.ts가 금액 범위, 날짜 역전 등 클라이언트 사이드 검증 함수 제공
 
 **참조 규칙**: BR-05, BR-06, DR-04
 
@@ -715,11 +715,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-01
 
 **완료 조건**
-- [ ] Button, Modal, Input, Table, LoadingSpinner, ErrorMessage 컴포넌트 구현 완료
-- [ ] 모든 interactive 요소에 키보드 접근 가능 (Tab, Enter, Escape)
-- [ ] 에러 메시지에 role='alert' 또는 aria-live 적용
-- [ ] 모달에 focus trap 구현
-- [ ] 색상 대비율 4.5:1 이상 확인 (WCAG 2.1 AA)
+- [x] Button, Modal, Input, Table, LoadingSpinner, ErrorMessage 컴포넌트 구현 완료
+- [x] 모든 interactive 요소에 키보드 접근 가능 (Tab, Enter, Escape)
+- [x] 에러 메시지에 role='alert' 또는 aria-live 적용
+- [x] 모달에 focus trap 구현
+- [x] 색상 대비율 4.5:1 이상 확인 (WCAG 2.1 AA)
 
 ---
 
@@ -727,10 +727,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-06
 
 **완료 조건**
-- [ ] AppLayout이 헤더, 메인 콘텐츠 영역을 포함하며 Outlet으로 페이지 컴포넌트 렌더링
-- [ ] 모바일(320px~) 및 데스크탑 반응형 레이아웃 구현
-- [ ] 헤더에 메시지 알림 배지 표시 영역 포함
-- [ ] AuthLayout이 인증 화면용 카드 중앙 레이아웃 제공
+- [x] AppLayout이 헤더, 메인 콘텐츠 영역을 포함하며 Outlet으로 페이지 컴포넌트 렌더링
+- [x] 모바일(320px~) 및 데스크탑 반응형 레이아웃 구현
+- [x] 헤더에 메시지 알림 배지 표시 영역 포함
+- [x] AuthLayout이 인증 화면용 카드 중앙 레이아웃 제공
 
 ---
 
@@ -738,10 +738,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-03, FE-04
 
 **완료 조건**
-- [ ] authApi.ts에 signup, login, refresh, withdraw 함수 구현
-- [ ] useAuth 훅에서 현재 인증 사용자 정보, isAuthenticated 상태 제공
-- [ ] 로그아웃/탈퇴 후 메모리 내 Access Token 즉시 초기화
-- [ ] API 에러(401, 409 등)를 훅 레벨에서 표준화된 에러 객체로 변환
+- [x] authApi.ts에 signup, login, refresh, withdraw 함수 구현
+- [x] useAuth 훅에서 현재 인증 사용자 정보, isAuthenticated 상태 제공
+- [x] 로그아웃/탈퇴 후 메모리 내 Access Token 즉시 초기화
+- [x] API 에러(401, 409 등)를 훅 레벨에서 표준화된 에러 객체로 변환
 
 **참조 규칙**: FR-U01, FR-U02, FR-U04, NFR-SEC01, NFR-SEC07
 
@@ -751,10 +751,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-08
 
 **완료 조건**
-- [ ] 이메일, 비밀번호, username 필드 및 유효성 검증 구현
-- [ ] username 중복(409) 에러를 username 필드 아래에 인라인 표시
-- [ ] 가입 성공 후 로그인 페이지로 리다이렉트
-- [ ] 모든 폼 필드에 label 연결 및 aria-describedby로 에러 메시지 연결
+- [x] 이메일, 비밀번호, username 필드 및 유효성 검증 구현
+- [x] username 중복(409) 에러를 username 필드 아래에 인라인 표시
+- [x] 가입 성공 후 로그인 페이지로 리다이렉트
+- [x] 모든 폼 필드에 label 연결 및 aria-describedby로 에러 메시지 연결
 
 **참조 규칙**: FR-U01, FR-U03
 
@@ -764,10 +764,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-08
 
 **완료 조건**
-- [ ] 이메일, 비밀번호 폼 및 로그인 버튼 구현
-- [ ] 로그인 성공 시 redirect 처리 (from location 기반)
-- [ ] 401 에러 시 '이메일 또는 비밀번호가 올바르지 않습니다' 메시지 표시
-- [ ] 로딩 중 버튼 비활성화 처리
+- [x] 이메일, 비밀번호 폼 및 로그인 버튼 구현
+- [x] 로그인 성공 시 redirect 처리 (from location 기반)
+- [x] 401 에러 시 '이메일 또는 비밀번호가 올바르지 않습니다' 메시지 표시
+- [x] 로딩 중 버튼 비활성화 처리
 
 **참조 규칙**: FR-U02
 
@@ -777,10 +777,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-08
 
 **완료 조건**
-- [ ] 탈퇴 확인 모달에 정책 안내 문구 포함
-- [ ] 탈퇴 완료 후 클라이언트 토큰 초기화 및 로그인 페이지 이동
-- [ ] 탈퇴 API 호출 중 로딩 상태 표시 및 중복 클릭 방지
-- [ ] 모달에 키보드 접근성 및 focus trap 적용
+- [x] 탈퇴 확인 모달에 정책 안내 문구 포함
+- [x] 탈퇴 완료 후 클라이언트 토큰 초기화 및 로그인 페이지 이동
+- [x] 탈퇴 API 호출 중 로딩 상태 표시 및 중복 클릭 방지
+- [x] 모달에 키보드 접근성 및 focus trap 적용
 
 **참조 규칙**: FR-U04, FR-U05
 
@@ -790,10 +790,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-03, FE-04
 
 **완료 조건**
-- [ ] groupApi.ts에 getGroups, getGroup, createGroup, updateGroup, deactivateGroup 함수 구현
-- [ ] useGroups 훅에서 그룹 목록 및 개별 그룹 상세 데이터 제공
-- [ ] 그룹 생성/수정 뮤테이션 성공 시 관련 쿼리 자동 무효화
-- [ ] API 응답 타입이 src/types/api.ts의 DTO 타입과 일치
+- [x] groupApi.ts에 getGroups, getGroup, createGroup, updateGroup, deactivateGroup 함수 구현
+- [x] useGroups 훅에서 그룹 목록 및 개별 그룹 상세 데이터 제공
+- [x] 그룹 생성/수정 뮤테이션 성공 시 관련 쿼리 자동 무효화
+- [x] API 응답 타입이 src/types/api.ts의 DTO 타입과 일치
 
 **참조 규칙**: FR-G01, FR-G02, FR-G04, FR-G05
 
@@ -803,10 +803,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-12
 
 **완료 조건**
-- [ ] 그룹 목록 로딩/에러/빈 상태 세 가지 상태 UI 구현
-- [ ] 각 그룹 카드 클릭 시 그룹 상세 페이지로 이동
-- [ ] '그룹 만들기' 버튼이 그룹 생성 페이지로 연결
-- [ ] LIMITED 그룹에 종료일 표시, UNLIMITED는 '상시' 표시
+- [x] 그룹 목록 로딩/에러/빈 상태 세 가지 상태 UI 구현
+- [x] 각 그룹 카드 클릭 시 그룹 상세 페이지로 이동
+- [x] '그룹 만들기' 버튼이 그룹 생성 페이지로 연결
+- [x] LIMITED 그룹에 종료일 표시, UNLIMITED는 '상시' 표시
 
 **참조 규칙**: FR-G01, FR-G03
 
@@ -816,10 +816,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-12
 
 **완료 조건**
-- [ ] 그룹 타입 선택에 따라 종료일 필드 조건부 렌더링
-- [ ] LIMITED 타입 선택 시 종료일 필수 검증
-- [ ] 종료일이 시작일보다 이전인 경우 에러 메시지 표시
-- [ ] 그룹 생성 성공 시 생성된 그룹의 상세 페이지로 이동
+- [x] 그룹 타입 선택에 따라 종료일 필드 조건부 렌더링
+- [x] LIMITED 타입 선택 시 종료일 필수 검증
+- [x] 종료일이 시작일보다 이전인 경우 에러 메시지 표시
+- [x] 그룹 생성 성공 시 생성된 그룹의 상세 페이지로 이동
 
 **참조 규칙**: FR-G01, FR-G02
 
@@ -829,10 +829,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-07, FE-12
 
 **완료 조건**
-- [ ] 그룹 기본 정보(이름, 타입, 기간, 상태) 표시
-- [ ] MANAGER 역할인 경우에만 수정/비활성화 버튼 노출
-- [ ] 그룹 수정 폼에서 이름·기간 변경 후 저장 기능 구현
-- [ ] 비활성화 확인 모달 구현 및 성공 시 그룹 목록으로 이동
+- [x] 그룹 기본 정보(이름, 타입, 기간, 상태) 표시
+- [x] MANAGER 역할인 경우에만 수정/비활성화 버튼 노출
+- [x] 그룹 수정 폼에서 이름·기간 변경 후 저장 기능 구현
+- [x] 비활성화 확인 모달 구현 및 성공 시 그룹 목록으로 이동
 
 **참조 규칙**: FR-G04, FR-G05
 
@@ -842,10 +842,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-03, FE-04
 
 **완료 조건**
-- [ ] invitationApi.ts에 sendInvitation, getMyInvitations, respondToInvitation 함수 구현
-- [ ] groupApi.ts에 getGroupMembers, removeGroupMember 함수 추가
-- [ ] useInvitations 훅에서 수신 초대 목록 및 수락/거절 뮤테이션 제공
-- [ ] 409(중복 초대), 404(사용자 없음) 에러를 UI 메시지로 변환
+- [x] invitationApi.ts에 sendInvitation, getMyInvitations, respondToInvitation 함수 구현
+- [x] groupApi.ts에 getGroupMembers, removeGroupMember 함수 추가
+- [x] useInvitations 훅에서 수신 초대 목록 및 수락/거절 뮤테이션 제공
+- [x] 409(중복 초대), 404(사용자 없음) 에러를 UI 메시지로 변환
 
 **참조 규칙**: FR-I01, FR-I02, FR-I03, FR-I04, FR-I05, FR-I06
 
@@ -855,10 +855,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-15, FE-16
 
 **완료 조건**
-- [ ] username 검색 입력 및 검색 결과 표시 UI 구현
-- [ ] 초대 발송 성공 시 성공 토스트 또는 인라인 메시지 표시
-- [ ] 409, 404 에러별 구체적인 안내 메시지 표시
-- [ ] MANAGER 역할이 아닌 사용자에게 초대 발송 UI 미노출
+- [x] username 검색 입력 및 검색 결과 표시 UI 구현
+- [x] 초대 발송 성공 시 성공 토스트 또는 인라인 메시지 표시
+- [x] 409, 404 에러별 구체적인 안내 메시지 표시
+- [x] MANAGER 역할이 아닌 사용자에게 초대 발송 UI 미노출
 
 **참조 규칙**: FR-I01, FR-I05
 
@@ -868,10 +868,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-16
 
 **완료 조건**
-- [ ] PENDING 초대 목록 표시 (그룹명, 초대자, 만료 기한 포함)
-- [ ] 수락 성공 시 해당 그룹 상세 페이지로 이동
-- [ ] 거절 성공 시 목록에서 해당 초대 제거
-- [ ] 만료된 초대에 '만료됨' 배지 표시 및 버튼 비활성화
+- [x] PENDING 초대 목록 표시 (그룹명, 초대자, 만료 기한 포함)
+- [x] 수락 성공 시 해당 그룹 상세 페이지로 이동
+- [x] 거절 성공 시 목록에서 해당 초대 제거
+- [x] 만료된 초대에 '만료됨' 배지 표시 및 버튼 비활성화
 
 **참조 규칙**: FR-I03, FR-I04, FR-I02
 
@@ -881,10 +881,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-15, FE-16
 
 **완료 조건**
-- [ ] 멤버 목록에 username, 역할 배지, 합류일 표시
-- [ ] MANAGER에게만 멤버 제거 버튼 노출 (본인 제거 버튼 미노출)
-- [ ] 멤버 제거 확인 모달 구현
-- [ ] 멤버 제거 성공 시 멤버 목록 자동 갱신
+- [x] 멤버 목록에 username, 역할 배지, 합류일 표시
+- [x] MANAGER에게만 멤버 제거 버튼 노출 (본인 제거 버튼 미노출)
+- [x] 멤버 제거 확인 모달 구현
+- [x] 멤버 제거 성공 시 멤버 목록 자동 갱신
 
 **참조 규칙**: FR-I06
 
@@ -894,10 +894,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-03, FE-04
 
 **완료 조건**
-- [ ] expenseApi.ts에 getExpenses, createExpense, updateExpense, deleteExpense 함수 구현
-- [ ] 필터 파라미터(날짜 범위, 카테고리 ID) 쿼리스트링 변환 처리
-- [ ] useExpenses 훅에서 필터 상태 관리 및 데이터 제공
-- [ ] 생성/수정/삭제 뮤테이션 성공 시 지출 목록 쿼리 자동 무효화
+- [x] expenseApi.ts에 getExpenses, createExpense, updateExpense, deleteExpense 함수 구현
+- [x] 필터 파라미터(날짜 범위, 카테고리 ID) 쿼리스트링 변환 처리
+- [x] useExpenses 훅에서 필터 상태 관리 및 데이터 제공
+- [x] 생성/수정/삭제 뮤테이션 성공 시 지출 목록 쿼리 자동 무효화
 
 **참조 규칙**: FR-E01, FR-E05, FR-E06, FR-E08
 
@@ -907,10 +907,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-07, FE-20
 
 **완료 조건**
-- [ ] 지출 목록 카드에 금액(KRW 포맷), 카테고리, 날짜(KST), 결제자, 설명 표시
-- [ ] 날짜 범위 필터 및 카테고리 드롭다운 필터 구현
-- [ ] 본인 입력 또는 MANAGER인 경우 수정/삭제 버튼 노출
-- [ ] 지출이 없는 경우 empty state UI 표시
+- [x] 지출 목록 카드에 금액(KRW 포맷), 카테고리, 날짜(KST), 결제자, 설명 표시
+- [x] 날짜 범위 필터 및 카테고리 드롭다운 필터 구현
+- [x] 본인 입력 또는 MANAGER인 경우 수정/삭제 버튼 노출
+- [x] 지출이 없는 경우 empty state UI 표시
 
 **참조 규칙**: FR-E05, FR-E06, FR-E08
 
@@ -920,12 +920,12 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `L` | 의존성: FE-05, FE-07, FE-20
 
 **완료 조건**
-- [ ] EQUAL/CUSTOM 분담 방식 전환 시 입력 UI 동적 변경
-- [ ] EQUAL 선택 시 splitCalculator를 사용한 실시간 분담금 미리보기
-- [ ] CUSTOM 선택 시 멤버별 금액 입력 및 합산 자동 계산
-- [ ] CUSTOM 합산과 총액 불일치 시 실시간 오류 표시
-- [ ] 결제자가 참여자에서 제외될 수 없도록 UI 강제
-- [ ] 지출 수정 시 기존 데이터 폼에 프리필
+- [x] EQUAL/CUSTOM 분담 방식 전환 시 입력 UI 동적 변경
+- [x] EQUAL 선택 시 splitCalculator를 사용한 실시간 분담금 미리보기
+- [x] CUSTOM 선택 시 멤버별 금액 입력 및 합산 자동 계산
+- [x] CUSTOM 합산과 총액 불일치 시 실시간 오류 표시
+- [x] 결제자가 참여자에서 제외될 수 없도록 UI 강제
+- [x] 지출 수정 시 기존 데이터 폼에 프리필
 
 **참조 규칙**: FR-E01, FR-E02, FR-E03, FR-E04, BR-05, BR-06, DR-04
 
@@ -935,11 +935,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-07, FE-03, FE-04
 
 **완료 조건**
-- [ ] categoryApi.ts에 getCategories, addGroupCategory, deleteGroupCategory 함수 구현
-- [ ] 카테고리 목록에서 SYSTEM/GROUP 카테고리 구분 표시
-- [ ] SYSTEM 카테고리에 수정/삭제 버튼 미노출
-- [ ] GROUP 카테고리 삭제 확인 모달에 재분류 안내 문구 포함
-- [ ] 카테고리 추가/삭제 성공 시 목록 자동 갱신
+- [x] categoryApi.ts에 getCategories, addGroupCategory, deleteGroupCategory 함수 구현
+- [x] 카테고리 목록에서 SYSTEM/GROUP 카테고리 구분 표시
+- [x] SYSTEM 카테고리에 수정/삭제 버튼 미노출
+- [x] GROUP 카테고리 삭제 확인 모달에 재분류 안내 문구 포함
+- [x] 카테고리 추가/삭제 성공 시 목록 자동 갱신
 
 **참조 규칙**: FR-C01, FR-C02, FR-C03, FR-C04, BR-10, BR-11
 
@@ -949,10 +949,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-03, FE-04
 
 **완료 조건**
-- [ ] settlementApi.ts에 createSettlement, getSettlements, getSettlementDetail 함수 구현
-- [ ] useSettlement 훅에서 정산 실행 뮤테이션 및 목록 데이터 제공
-- [ ] 정산 실행 성공 시 정산 목록 쿼리 자동 무효화
-- [ ] 403(MANAGER 권한 없음) 에러를 안내 메시지로 변환
+- [x] settlementApi.ts에 createSettlement, getSettlements, getSettlementDetail 함수 구현
+- [x] useSettlement 훅에서 정산 실행 뮤테이션 및 목록 데이터 제공
+- [x] 정산 실행 성공 시 정산 목록 쿼리 자동 무효화
+- [x] 403(MANAGER 권한 없음) 에러를 안내 메시지로 변환
 
 **참조 규칙**: FR-S01, FR-S02, FR-S04, FR-S05, FR-S06
 
@@ -962,11 +962,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-24
 
 **완료 조건**
-- [ ] 정산 기간 날짜 입력 UI 구현
-- [ ] 종료일 < 시작일 조건의 클라이언트 사이드 검증
-- [ ] MANAGER 역할이 아닌 사용자에게 정산 실행 버튼 미노출
-- [ ] 정산 실행 중 로딩 상태 및 중복 제출 방지
-- [ ] 정산 성공 후 결과 화면 자동 이동
+- [x] 정산 기간 날짜 입력 UI 구현
+- [x] 종료일 < 시작일 조건의 클라이언트 사이드 검증
+- [x] MANAGER 역할이 아닌 사용자에게 정산 실행 버튼 미노출
+- [x] 정산 실행 중 로딩 상태 및 중복 제출 방지
+- [x] 정산 성공 후 결과 화면 자동 이동
 
 **참조 규칙**: FR-S01, FR-S06
 
@@ -976,11 +976,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-07, FE-24
 
 **완료 조건**
-- [ ] 정산 목록에 기간, 실행일, 총 지출 금액 표시
-- [ ] 정산 상세에서 멤버별 결제액/분담액/차액을 표 형태로 표시
-- [ ] 차액 양수/음수를 색상(접근성 대비 고려) 및 텍스트('받을 금액'/'낼 금액')로 구분
-- [ ] 정산 내역이 없는 경우 '아직 정산 내역이 없습니다' 빈 상태 표시
-- [ ] 재정산 시 이전 정산과 신규 정산이 목록에 함께 표시
+- [x] 정산 목록에 기간, 실행일, 총 지출 금액 표시
+- [x] 정산 상세에서 멤버별 결제액/분담액/차액을 표 형태로 표시
+- [x] 차액 양수/음수를 색상(접근성 대비 고려) 및 텍스트('받을 금액'/'낼 금액')로 구분
+- [x] 정산 내역이 없는 경우 '아직 정산 내역이 없습니다' 빈 상태 표시
+- [x] 재정산 시 이전 정산과 신규 정산이 목록에 함께 표시
 
 **참조 규칙**: FR-S02, FR-S04, FR-S05
 
@@ -990,11 +990,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-07, FE-03, FE-04
 
 **완료 조건**
-- [ ] messageApi.ts에 getMessages 함수 구현
-- [ ] 메시지 목록에서 각 메시지의 그룹명, 정산 기간, 차액 표시
-- [ ] 차액 양수/음수를 텍스트로 명확히 구분
-- [ ] 메시지가 없는 경우 empty state UI 표시
-- [ ] 헤더에 읽지 않은 메시지 배지(count) 표시
+- [x] messageApi.ts에 getMessages 함수 구현
+- [x] 메시지 목록에서 각 메시지의 그룹명, 정산 기간, 차액 표시
+- [x] 차액 양수/음수를 텍스트로 명확히 구분
+- [x] 메시지가 없는 경우 empty state UI 표시
+- [x] 헤더에 읽지 않은 메시지 배지(count) 표시
 
 **참조 규칙**: FR-M01, FR-M02, FR-M03
 
@@ -1004,11 +1004,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-07, FE-03, FE-04
 
 **완료 조건**
-- [ ] 카테고리별 파이 차트와 멤버별 파이 차트 각각 구현
-- [ ] 기간(시작일/종료일) 선택 후 차트 데이터 조회
-- [ ] 차트에 색상 외 텍스트 레이블로 카테고리/멤버명과 금액 표시 (접근성)
-- [ ] 데이터 로딩/에러/빈 상태 처리
-- [ ] 차트 컴포넌트에 aria-label 및 데이터 테이블 대체 수단 제공
+- [x] 카테고리별 파이 차트와 멤버별 파이 차트 각각 구현
+- [x] 기간(시작일/종료일) 선택 후 차트 데이터 조회
+- [x] 차트에 색상 외 텍스트 레이블로 카테고리/멤버명과 금액 표시 (접근성)
+- [x] 데이터 로딩/에러/빈 상태 처리
+- [x] 차트 컴포넌트에 aria-label 및 데이터 테이블 대체 수단 제공
 
 **참조 규칙**: FR-R01, FR-R02
 
@@ -1018,10 +1018,10 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-21, FE-26
 
 **완료 조건**
-- [ ] 지출 내역 엑셀 파일에 날짜, 카테고리, 금액, 결제자, 설명 컬럼 포함
-- [ ] 정산 금액 엑셀 파일에 멤버별 결제액, 분담액, 차액 컬럼 포함
-- [ ] 다운로드 중 로딩 상태 표시
-- [ ] 파일명에 그룹명과 날짜 범위 포함
+- [x] 지출 내역 엑셀 파일에 날짜, 카테고리, 금액, 결제자, 설명 컬럼 포함
+- [x] 정산 금액 엑셀 파일에 멤버별 결제액, 분담액, 차액 컬럼 포함
+- [x] 다운로드 중 로딩 상태 표시
+- [x] 파일명에 그룹명과 날짜 범위 포함
 
 **참조 규칙**: FR-R03, FR-R04
 
@@ -1031,11 +1031,11 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-06
 
 **완료 조건**
-- [ ] errorCode를 한국어 메시지로 변환하는 매핑 구현
-- [ ] 전역 토스트 컴포넌트 구현 및 App.tsx에 등록
-- [ ] aria-live='polite' 영역에서 성공/에러 메시지를 스크린 리더에 전달
-- [ ] 네트워크 오류(5xx, 네트워크 단절) 시 일반 오류 메시지 표시
-- [ ] API 요청 중 페이지 수준 및 버튼 수준 로딩 인디케이터 일관성 확보
+- [x] errorCode를 한국어 메시지로 변환하는 매핑 구현
+- [x] 전역 토스트 컴포넌트 구현 및 App.tsx에 등록
+- [x] aria-live='polite' 영역에서 성공/에러 메시지를 스크린 리더에 전달
+- [x] 네트워크 오류(5xx, 네트워크 단절) 시 일반 오류 메시지 표시
+- [x] API 요청 중 페이지 수준 및 버튼 수준 로딩 인디케이터 일관성 확보
 
 ---
 
