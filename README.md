@@ -36,6 +36,7 @@
 | [프로젝트 구조 설계 원칙](docs/4-project-principle.md) | 레이어 구조, 네이밍 컨벤션, 테스트 전략, FE/BE 디렉토리 구조 |
 | [아키텍처 다이어그램](docs/5-arch-diagram.md) | 시스템 구성, 인증 흐름, 정산 흐름, 초대 상태 전이 (Mermaid) |
 | [ERD](docs/6-erd.md) | 10개 엔티티 관계도, 속성·제약·FK 전략, 주요 관계 설명 |
+| [실행 계획](docs/7-execution-plan.md) | DB·BE·FE 79개 태스크, 체크박스형 완료 조건 및 의존성, 5단계 구현 순서 |
 
 ---
 
