@@ -58,7 +58,7 @@ export default function ExpenseFormPage() {
 
   if (isEdit && isLoadingExpense) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}>
+      <div className="flex justify-center p-8">
         <LoadingSpinner />
       </div>
     );
@@ -77,30 +77,19 @@ export default function ExpenseFormPage() {
     : undefined;
 
   return (
-    <>
-      <style>{`
-        .expense-form-page { max-width: 640px; }
-        .expense-form-page__title {
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--color-text-primary);
-          margin: 0 0 var(--space-6);
-        }
-      `}</style>
-      <div className="expense-form-page">
-        <h1 className="expense-form-page__title">
-          {isEdit ? '지출 수정' : '지출 등록'}
-        </h1>
-        <ExpenseForm
-          categories={categories}
-          members={members}
-          currentUserId={currentUser?.id ?? ''}
-          initialValues={initialValues}
-          onSubmit={handleSubmit}
-          isSubmitting={createExpense.isPending || updateExpense.isPending}
-          onCancel={handleCancel}
-        />
-      </div>
-    </>
+    <div className="max-w-[640px]">
+      <h1 className="text-xl font-semibold text-[#202124] m-0 mb-6">
+        {isEdit ? '지출 수정' : '지출 등록'}
+      </h1>
+      <ExpenseForm
+        categories={categories}
+        members={members}
+        currentUserId={currentUser?.id ?? ''}
+        initialValues={initialValues}
+        onSubmit={handleSubmit}
+        isSubmitting={createExpense.isPending || updateExpense.isPending}
+        onCancel={handleCancel}
+      />
+    </div>
   );
 }

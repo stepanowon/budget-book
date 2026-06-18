@@ -33,13 +33,15 @@ export async function getMyGroups(userId: string): Promise<Group[]> {
 }
 
 // 그룹 상세 조회 (BE-15)
-export async function getGroupDetail(
-  groupId: string,
-): Promise<Group & { members: (GroupMember & { username: string })[] }> {
-  const group = await groupRepo.findGroupById(groupId);
+export async function getGroupDetail(groupId: string, userId: string) {
+  const group = await groupRepo.findGroupByIdForUser(groupId, userId);
   if (!group) throw new NotFoundError('그룹을 찾을 수 없습니다.');
   const members = await groupRepo.findGroupMembers(groupId);
   return { ...group, members };
+}
+
+export async function getGroupMembers(groupId: string) {
+  return groupRepo.findGroupMembers(groupId);
 }
 
 // 그룹 수정 (BE-15) - MANAGER만 가능
@@ -102,6 +104,11 @@ export async function sendInvitation(
 // 초대 목록 조회 (BE-16)
 export async function getGroupInvitations(groupId: string): Promise<Invitation[]> {
   return invitationRepo.findGroupInvitations(groupId);
+}
+
+// 내 초대 목록 조회
+export async function getMyInvitations(userId: string) {
+  return invitationRepo.findMyInvitations(userId);
 }
 
 // 초대 수락/거절 (BE-17)

@@ -26,7 +26,7 @@ export async function getGroupDetail(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const group = await groupService.getGroupDetail(req.params.groupId);
+    const group = await groupService.getGroupDetail(req.params.groupId, req.user!.id);
     res.status(HTTP_STATUS.OK).json({ success: true, data: group });
   } catch (err) {
     next(err);
@@ -85,6 +85,19 @@ export async function getGroupInvitations(
   }
 }
 
+export async function getMyInvitations(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const invitations = await groupService.getMyInvitations(req.user!.id);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: invitations });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function respondToInvitation(
   req: Request,
   res: Response,
@@ -97,6 +110,19 @@ export async function respondToInvitation(
       req.body.action,
     );
     res.status(HTTP_STATUS.OK).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getGroupMembers(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const members = await groupService.getGroupMembers(req.params.groupId);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: members });
   } catch (err) {
     next(err);
   }

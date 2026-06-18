@@ -18,24 +18,11 @@ interface CategoryChipProps {
 export default function CategoryChip({ name }: CategoryChipProps) {
   const color = getCategoryColor(name);
   return (
-    <>
-      <style>{`
-        .category-chip {
-          display: inline-flex;
-          align-items: center;
-          padding: 2px 10px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 500;
-          white-space: nowrap;
-        }
-      `}</style>
-      <span
-        className="category-chip"
-        style={{ background: color + '22', color }}
-      >
-        {name}
-      </span>
-    </>
+    <span
+      className="inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium whitespace-nowrap"
+      style={{ background: color + '22', color }}
+    >
+      {name}
+    </span>
   );
 }

@@ -10,17 +10,23 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'btn--sm',
-  md: 'btn--md',
-  lg: 'btn--lg',
+const baseClasses =
+  'inline-flex items-center justify-center gap-2 rounded font-medium cursor-pointer transition-colors whitespace-nowrap min-w-[44px] min-h-[44px] font-sans';
+
+const sizeClasses: Record<ButtonSize, string> = {
+  sm: 'text-xs px-4 py-1.5 min-h-[44px]',
+  md: 'text-sm px-6 py-2 min-h-[44px]',
+  lg: 'text-base px-8 py-2.5 min-h-[48px]',
 };
 
-const variantStyles: Record<ButtonVariant, string> = {
-  filled: 'btn--filled',
-  outlined: 'btn--outlined',
-  text: 'btn--text',
-  danger: 'btn--danger',
+const variantClasses: Record<ButtonVariant, string> = {
+  filled:
+    'bg-primary text-white border-0 shadow-sm hover:bg-primary-dark hover:shadow disabled:bg-[#f1f3f4] disabled:text-[#bdc1c6] disabled:cursor-not-allowed disabled:shadow-none',
+  outlined:
+    'bg-transparent text-primary border border-border hover:bg-primary-light hover:border-[#c5d9f6] disabled:bg-[#f1f3f4] disabled:text-[#bdc1c6] disabled:border-[#f1f3f4] disabled:cursor-not-allowed',
+  text: 'bg-transparent text-primary border-0 px-3 py-2 hover:bg-primary-light disabled:bg-transparent disabled:text-[#bdc1c6] disabled:cursor-not-allowed',
+  danger:
+    'bg-danger text-white border-0 shadow-sm hover:bg-[#b5281e] hover:shadow disabled:bg-[#f1f3f4] disabled:text-[#bdc1c6] disabled:cursor-not-allowed disabled:shadow-none',
 };
 
 export default function Button({
@@ -37,87 +43,23 @@ export default function Button({
   return (
     <>
       <style>{`
-        .btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: var(--space-2);
-          border-radius: var(--border-radius);
-          font-family: var(--font-family);
-          font-weight: 500;
-          cursor: pointer;
-          transition: background var(--transition-fast), box-shadow var(--transition-fast);
-          white-space: nowrap;
-          min-width: 44px;
-          min-height: 44px;
-        }
-        .btn:disabled {
-          cursor: not-allowed;
-          background: var(--color-bg-disabled);
-          color: var(--color-text-disabled);
-          border-color: var(--color-bg-disabled);
-          box-shadow: none;
-        }
-        .btn--sm { font-size: 12px; padding: 6px 16px; min-height: 44px; }
-        .btn--md { font-size: 14px; padding: 8px 24px; min-height: 44px; }
-        .btn--lg { font-size: 16px; padding: 10px 32px; min-height: 48px; }
-        .btn--filled {
-          background: var(--color-primary);
-          color: #fff;
-          border: none;
-          box-shadow: 0 1px 2px rgba(0,0,0,.2);
-        }
-        .btn--filled:hover:not(:disabled) {
-          background: var(--color-primary-dark);
-          box-shadow: 0 2px 6px rgba(0,0,0,.2);
-        }
-        .btn--outlined {
-          background: transparent;
-          color: var(--color-primary);
-          border: 1px solid var(--color-border);
-        }
-        .btn--outlined:hover:not(:disabled) {
-          background: var(--color-primary-light);
-          border-color: #c5d9f6;
-        }
-        .btn--text {
-          background: transparent;
-          color: var(--color-primary);
-          border: none;
-          padding: 8px 12px;
-        }
-        .btn--text:hover:not(:disabled) {
-          background: var(--color-primary-light);
-        }
-        .btn--danger {
-          background: var(--color-danger);
-          color: #fff;
-          border: none;
-          box-shadow: 0 1px 2px rgba(0,0,0,.2);
-        }
-        .btn--danger:hover:not(:disabled) {
-          background: #b5281e;
-          box-shadow: 0 2px 6px rgba(0,0,0,.2);
-        }
-        .btn__spinner {
-          width: 14px;
-          height: 14px;
+        @keyframes btn-spin { to { transform: rotate(360deg); } }
+        .btn-spinner {
+          width: 14px; height: 14px;
           border: 2px solid currentColor;
           border-top-color: transparent;
           border-radius: 50%;
           animation: btn-spin 0.6s linear infinite;
-        }
-        @keyframes btn-spin {
-          to { transform: rotate(360deg); }
+          flex-shrink: 0;
         }
       `}</style>
       <button
-        className={`btn ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+        className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
         disabled={isDisabled}
         aria-busy={loading}
         {...rest}
       >
-        {loading && <span className="btn__spinner" aria-hidden="true" />}
+        {loading && <span className="btn-spinner" aria-hidden="true" />}
         {children}
       </button>
     </>

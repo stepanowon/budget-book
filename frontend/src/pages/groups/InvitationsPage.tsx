@@ -11,7 +11,7 @@ export default function InvitationsPage() {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+      <div className="flex justify-center p-12">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -42,173 +42,57 @@ export default function InvitationsPage() {
   };
 
   return (
-    <>
-      <style>{`
-        .invitations-page {
-          padding: var(--space-6) var(--space-8);
-          max-width: 640px;
-          margin: 0 auto;
-        }
-        .invitations-page__title {
-          font-size: 22px;
-          font-weight: 500;
-          color: var(--color-text-primary);
-          margin: 0 0 var(--space-6);
-        }
-        .invitation-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-3);
-        }
-        .invitation-card {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px;
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          gap: var(--space-3);
-        }
-        .invitation-card--expired {
-          opacity: 0.6;
-        }
-        .invitation-card__info {
-          flex: 1;
-          min-width: 0;
-        }
-        .invitation-card__group-name {
-          font-size: 15px;
-          font-weight: 500;
-          color: var(--color-text-primary);
-          margin: 0 0 4px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .invitation-card__meta {
-          font-size: 12px;
-          color: var(--color-text-secondary);
-          margin: 0;
-        }
-        .invitation-card__actions {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          flex-shrink: 0;
-        }
-        .badge-expired {
-          display: inline-flex;
-          align-items: center;
-          height: 24px;
-          padding: 0 10px;
-          border-radius: var(--radius-pill);
-          font-size: 12px;
-          font-weight: 500;
-          background: var(--color-border-light);
-          color: var(--color-text-secondary);
-        }
-        .btn-accept {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 7px 16px;
-          background: var(--color-primary);
-          color: #fff;
-          border: none;
-          border-radius: var(--radius-sm);
-          font-size: 13px;
-          font-weight: 500;
-          font-family: var(--font-family);
-          cursor: pointer;
-          min-height: 44px;
-          min-width: 44px;
-          transition: background var(--transition-fast);
-        }
-        .btn-accept:disabled {
-          background: var(--color-border);
-          color: var(--color-text-disabled);
-          cursor: not-allowed;
-        }
-        .btn-accept:hover:not(:disabled) { background: var(--color-primary-dark); }
-        .btn-decline {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 7px 16px;
-          background: transparent;
-          color: var(--color-danger);
-          border: 1px solid var(--color-danger);
-          border-radius: var(--radius-sm);
-          font-size: 13px;
-          font-weight: 500;
-          font-family: var(--font-family);
-          cursor: pointer;
-          min-height: 44px;
-          min-width: 44px;
-          transition: background var(--transition-fast);
-        }
-        .btn-decline:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .btn-decline:hover:not(:disabled) { background: var(--color-danger-light); }
-        .empty-text {
-          font-size: 14px;
-          color: var(--color-text-secondary);
-          text-align: center;
-          padding: var(--space-8) 0;
-        }
-      `}</style>
+    <div className="max-w-[640px] mx-auto">
+      <h1 className="text-[22px] font-medium text-[#202124] m-0 mb-6">받은 초대</h1>
 
-      <div className="invitations-page">
-        <h1 className="invitations-page__title">받은 초대</h1>
-
-        {pending.length === 0 ? (
-          <p className="empty-text">받은 초대가 없습니다.</p>
-        ) : (
-          <ul className="invitation-list" role="list">
-            {pending.map((inv) => {
-              const expired = isExpired(inv.expires_at);
-              return (
-                <li
-                  key={inv.id}
-                  className={`invitation-card${expired ? ' invitation-card--expired' : ''}`}
-                >
-                  <div className="invitation-card__info">
-                    <p className="invitation-card__group-name">{inv.group_name}</p>
-                    <p className="invitation-card__meta">
-                      초대자: {inv.inviter_username} &middot; 만료: {inv.expires_at.slice(0, 10)}
-                    </p>
-                  </div>
-                  <div className="invitation-card__actions">
-                    {expired ? (
-                      <span className="badge-expired">만료됨</span>
-                    ) : (
-                      <>
-                        <button
-                          className="btn-accept"
-                          onClick={() => handleAccept(inv.id, inv.group_id)}
-                          disabled={isPending}
-                        >
-                          수락
-                        </button>
-                        <button
-                          className="btn-decline"
-                          onClick={() => handleDecline(inv.id)}
-                          disabled={isPending}
-                        >
-                          거절
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-    </>
+      {pending.length === 0 ? (
+        <p className="text-sm text-neutral text-center py-8">받은 초대가 없습니다.</p>
+      ) : (
+        <ul className="flex flex-col gap-3" role="list">
+          {pending.map((inv) => {
+            const expired = isExpired(inv.expires_at);
+            return (
+              <li
+                key={inv.id}
+                className={`flex items-center justify-between p-4 bg-white border border-border rounded gap-3 ${expired ? 'opacity-60' : ''}`}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-medium text-[#202124] m-0 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {inv.group_name}
+                  </p>
+                  <p className="text-xs text-neutral m-0">
+                    초대자: {inv.inviter_username} &middot; 만료: {inv.expires_at.slice(0, 10)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {expired ? (
+                    <span className="inline-flex items-center h-6 px-2.5 rounded-pill text-xs font-medium bg-border text-neutral">
+                      만료됨
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white border-0 rounded text-[13px] font-medium font-sans cursor-pointer min-h-[44px] min-w-[44px] hover:bg-primary-dark transition-colors disabled:bg-border disabled:text-[#bdc1c6] disabled:cursor-not-allowed"
+                        onClick={() => handleAccept(inv.id, inv.group_id)}
+                        disabled={isPending}
+                      >
+                        수락
+                      </button>
+                      <button
+                        className="inline-flex items-center justify-center px-4 py-2 bg-transparent text-danger border border-danger rounded text-[13px] font-medium font-sans cursor-pointer min-h-[44px] min-w-[44px] hover:bg-danger-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleDecline(inv.id)}
+                        disabled={isPending}
+                      >
+                        거절
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }

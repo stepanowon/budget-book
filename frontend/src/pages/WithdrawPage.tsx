@@ -23,39 +23,9 @@ export default function WithdrawPage() {
 
   return (
     <>
-      <style>{`
-        .withdraw-page {
-          max-width: 480px;
-          margin: 0 auto;
-          padding: var(--space-8) var(--space-4);
-        }
-        .withdraw-page__title {
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--color-text-primary);
-          margin: 0 0 var(--space-4);
-        }
-        .withdraw-page__desc {
-          font-size: 14px;
-          color: var(--color-neutral, #5f6368);
-          margin: 0 0 var(--space-8);
-          line-height: 1.6;
-        }
-        .withdraw-modal__message {
-          font-size: 14px;
-          color: var(--color-text-primary);
-          line-height: 1.6;
-          margin: 0;
-        }
-        .withdraw-modal__actions {
-          display: flex;
-          gap: var(--space-2);
-          justify-content: flex-end;
-        }
-      `}</style>
-      <div className="withdraw-page">
-        <h1 className="withdraw-page__title">계정 설정</h1>
-        <p className="withdraw-page__desc">
+      <div className="max-w-[480px] mx-auto py-8 px-4">
+        <h1 className="text-xl font-semibold text-[#202124] m-0 mb-4">계정 설정</h1>
+        <p className="text-sm text-neutral m-0 mb-8 leading-relaxed">
           계정을 탈퇴하면 모든 개인 정보가 삭제됩니다.
         </p>
         <Button
@@ -72,7 +42,7 @@ export default function WithdrawPage() {
         onClose={() => !isLoading && setIsModalOpen(false)}
         title="회원 탈퇴"
         footer={
-          <div className="withdraw-modal__actions">
+          <div className="flex gap-2 justify-end">
             <Button
               variant="outlined"
               size="md"
@@ -93,7 +63,7 @@ export default function WithdrawPage() {
           </div>
         }
       >
-        <p className="withdraw-modal__message">
+        <p className="text-sm text-[#202124] leading-relaxed m-0">
           탈퇴 후 계정 정보는 복구되지 않습니다. 그룹 내 지출 기록은 유지됩니다.
         </p>
       </Modal>

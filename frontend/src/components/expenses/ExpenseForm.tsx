@@ -16,6 +16,12 @@ interface ExpenseFormProps {
   onCancel: () => void;
 }
 
+const inputClass =
+  'px-3 py-2 border border-border rounded text-sm font-sans min-h-[44px] text-[#202124] bg-white w-full box-border outline-none focus:border-primary focus:ring-2 focus:ring-primary-light';
+const labelClass = 'text-[13px] font-medium text-neutral';
+const labelRequiredClass =
+  'text-[13px] font-medium text-neutral after:content-["_*"] after:text-danger';
+
 export default function ExpenseForm({
   categories,
   members,
@@ -115,297 +121,195 @@ export default function ExpenseForm({
   }
 
   return (
-    <>
-      <style>{`
-        .expense-form { display: flex; flex-direction: column; gap: var(--space-5); }
-        .expense-form__field { display: flex; flex-direction: column; gap: var(--space-1); }
-        .expense-form__label {
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-        }
-        .expense-form__label--required::after {
-          content: ' *';
-          color: var(--color-danger);
-        }
-        .expense-form__input,
-        .expense-form__select {
-          padding: 8px 12px;
-          border: 1px solid var(--color-border);
-          border-radius: var(--border-radius);
-          font-size: 14px;
-          font-family: var(--font-family);
-          min-height: 44px;
-          color: var(--color-text-primary);
-          background: var(--color-surface);
-          width: 100%;
-          box-sizing: border-box;
-        }
-        .expense-form__input:focus,
-        .expense-form__select:focus {
-          outline: none;
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 2px var(--color-primary-light);
-        }
-        .expense-form__error {
-          font-size: 12px;
-          color: var(--color-danger);
-        }
-        .expense-form__radio-group {
-          display: flex;
-          gap: var(--space-4);
-        }
-        .expense-form__radio-label {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          font-size: 14px;
-          cursor: pointer;
-          min-height: 44px;
-        }
-        .expense-form__checkboxes {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-        }
-        .expense-form__checkbox-label {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          font-size: 14px;
-          cursor: pointer;
-          min-height: 44px;
-        }
-        .expense-form__split-preview {
-          background: var(--color-primary-light);
-          border-radius: var(--border-radius);
-          padding: var(--space-3) var(--space-4);
-          font-size: 13px;
-          color: var(--color-primary);
-        }
-        .expense-form__custom-row {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          margin-bottom: var(--space-2);
-        }
-        .expense-form__custom-row span { flex: 1; font-size: 14px; }
-        .expense-form__custom-input {
-          width: 120px;
-          padding: 6px 10px;
-          border: 1px solid var(--color-border);
-          border-radius: var(--border-radius);
-          font-size: 14px;
-          min-height: 44px;
-          text-align: right;
-          font-variant-numeric: tabular-nums;
-        }
-        .expense-form__custom-total {
-          font-size: 13px;
-          font-weight: 500;
-          margin-top: var(--space-2);
-        }
-        .expense-form__custom-total--mismatch { color: var(--color-danger); }
-        .expense-form__custom-total--ok { color: var(--color-success); }
-        .expense-form__actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: var(--space-2);
-          padding-top: var(--space-2);
-        }
-      `}</style>
-      <form className="expense-form" onSubmit={handleSubmit} noValidate>
-        <div className="expense-form__field">
-          <label className="expense-form__label" htmlFor="ef-description">
-            설명
-          </label>
-          <input
-            id="ef-description"
-            className="expense-form__input"
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="예: 저녁 식사"
-          />
-        </div>
+    <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+      <div className="flex flex-col gap-1">
+        <label className={labelClass} htmlFor="ef-description">
+          설명
+        </label>
+        <input
+          id="ef-description"
+          className={inputClass}
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="예: 저녁 식사"
+        />
+      </div>
 
-        <div className="expense-form__field">
-          <label className="expense-form__label expense-form__label--required" htmlFor="ef-amount">
-            금액 (원)
-          </label>
-          <input
-            id="ef-amount"
-            className="expense-form__input"
-            type="number"
-            min="1"
-            step="1"
-            value={totalAmount}
-            onChange={(e) => setTotalAmount(e.target.value)}
-            placeholder="0"
-            style={{ fontVariantNumeric: 'tabular-nums' }}
-          />
-          {errors.totalAmount && (
-            <span className="expense-form__error">{errors.totalAmount}</span>
-          )}
-        </div>
+      <div className="flex flex-col gap-1">
+        <label className={labelRequiredClass} htmlFor="ef-amount">
+          금액 (원)
+        </label>
+        <input
+          id="ef-amount"
+          className={inputClass}
+          type="number"
+          min="1"
+          step="1"
+          value={totalAmount}
+          onChange={(e) => setTotalAmount(e.target.value)}
+          placeholder="0"
+          style={{ fontVariantNumeric: 'tabular-nums' }}
+        />
+        {errors.totalAmount && (
+          <span className="text-xs text-danger">{errors.totalAmount}</span>
+        )}
+      </div>
 
-        <div className="expense-form__field">
-          <label className="expense-form__label expense-form__label--required" htmlFor="ef-date">
-            날짜
-          </label>
-          <input
-            id="ef-date"
-            className="expense-form__input"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-          {errors.date && (
-            <span className="expense-form__error">{errors.date}</span>
-          )}
-        </div>
+      <div className="flex flex-col gap-1">
+        <label className={labelRequiredClass} htmlFor="ef-date">
+          날짜
+        </label>
+        <input
+          id="ef-date"
+          className={inputClass}
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        {errors.date && (
+          <span className="text-xs text-danger">{errors.date}</span>
+        )}
+      </div>
 
-        <div className="expense-form__field">
-          <label className="expense-form__label expense-form__label--required" htmlFor="ef-category">
-            카테고리
+      <div className="flex flex-col gap-1">
+        <label className={labelRequiredClass} htmlFor="ef-category">
+          카테고리
+        </label>
+        <select
+          id="ef-category"
+          className={inputClass}
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
+          <option value="">카테고리 선택</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+        {errors.categoryId && (
+          <span className="text-xs text-danger">{errors.categoryId}</span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={labelClass}>분담 방식</span>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]">
+            <input
+              type="radio"
+              value={SPLIT_TYPE.EQUAL}
+              checked={splitType === SPLIT_TYPE.EQUAL}
+              onChange={() => setSplitType(SPLIT_TYPE.EQUAL)}
+            />
+            균등 분담
           </label>
-          <select
-            id="ef-category"
-            className="expense-form__select"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-          >
-            <option value="">카테고리 선택</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
+          <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]">
+            <input
+              type="radio"
+              value={SPLIT_TYPE.CUSTOM}
+              checked={splitType === SPLIT_TYPE.CUSTOM}
+              onChange={() => setSplitType(SPLIT_TYPE.CUSTOM)}
+            />
+            개별 분담
+          </label>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={labelRequiredClass}>참여자</span>
+        <div className="flex flex-col gap-2">
+          {members.map((m) => (
+            <label key={m.user_id} className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]">
+              <input
+                type="checkbox"
+                checked={participantIds.includes(m.user_id)}
+                disabled={m.user_id === paidBy}
+                onChange={() => toggleParticipant(m.user_id)}
+              />
+              {m.username}
+              {m.user_id === paidBy && ' (결제자)'}
+            </label>
+          ))}
+        </div>
+        {errors.participants && (
+          <span className="text-xs text-danger">{errors.participants}</span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className={labelRequiredClass} htmlFor="ef-paid-by">
+          결제자
+        </label>
+        <select
+          id="ef-paid-by"
+          className={inputClass}
+          value={paidBy}
+          onChange={(e) => setPaidBy(e.target.value)}
+        >
+          {members
+            .filter((m) => participantIds.includes(m.user_id))
+            .map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.username}
               </option>
             ))}
-          </select>
-          {errors.categoryId && (
-            <span className="expense-form__error">{errors.categoryId}</span>
-          )}
-        </div>
+        </select>
+      </div>
 
-        <div className="expense-form__field">
-          <span className="expense-form__label">분담 방식</span>
-          <div className="expense-form__radio-group">
-            <label className="expense-form__radio-label">
-              <input
-                type="radio"
-                value={SPLIT_TYPE.EQUAL}
-                checked={splitType === SPLIT_TYPE.EQUAL}
-                onChange={() => setSplitType(SPLIT_TYPE.EQUAL)}
-              />
-              균등 분담
-            </label>
-            <label className="expense-form__radio-label">
-              <input
-                type="radio"
-                value={SPLIT_TYPE.CUSTOM}
-                checked={splitType === SPLIT_TYPE.CUSTOM}
-                onChange={() => setSplitType(SPLIT_TYPE.CUSTOM)}
-              />
-              개별 분담
-            </label>
-          </div>
+      {splitType === SPLIT_TYPE.EQUAL && equalSplits && participantIds.length > 0 && (
+        <div className="bg-primary-light rounded px-4 py-3 text-[13px] text-primary">
+          {(() => {
+            const paidByMember = members.find((m) => m.user_id === paidBy);
+            const paidByAmt = equalSplits[paidBy] ?? 0;
+            const baseAmt = Object.values(equalSplits).find((v) => v !== paidByAmt) ?? paidByAmt;
+            return `각자 ${formatCurrency(baseAmt)} (결제자 ${paidByMember?.username ?? ''} ${formatCurrency(paidByAmt)})`;
+          })()}
         </div>
+      )}
 
-        <div className="expense-form__field">
-          <span className="expense-form__label expense-form__label--required">
-            참여자
-          </span>
-          <div className="expense-form__checkboxes">
-            {members.map((m) => (
-              <label key={m.user_id} className="expense-form__checkbox-label">
+      {splitType === SPLIT_TYPE.CUSTOM && (
+        <div className="flex flex-col gap-1">
+          <span className={labelClass}>참여자별 금액</span>
+          {participantIds.map((id) => {
+            const member = members.find((m) => m.user_id === id);
+            return (
+              <div key={id} className="flex items-center gap-3 mb-2">
+                <span className="flex-1 text-sm">{member?.username ?? id}</span>
                 <input
-                  type="checkbox"
-                  checked={participantIds.includes(m.user_id)}
-                  disabled={m.user_id === paidBy}
-                  onChange={() => toggleParticipant(m.user_id)}
+                  className="w-[120px] px-2.5 py-1.5 border border-border rounded text-sm min-h-[44px] text-right [font-variant-numeric:tabular-nums] outline-none focus:border-primary focus:ring-2 focus:ring-primary-light"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={customSplits[id] ?? ''}
+                  onChange={(e) => handleCustomSplitChange(id, e.target.value)}
+                  placeholder="0"
                 />
-                {m.username}
-                {m.user_id === paidBy && ' (결제자)'}
-              </label>
-            ))}
+              </div>
+            );
+          })}
+          <div
+            className={`text-[13px] font-medium mt-2 ${customMismatch ? 'text-danger' : 'text-success'}`}
+          >
+            합계: {formatCurrency(customTotal)}
+            {isValidTotal && ` / 총액: ${formatCurrency(parsedTotal)}`}
           </div>
-          {errors.participants && (
-            <span className="expense-form__error">{errors.participants}</span>
+          {errors.customSplits && (
+            <span className="text-xs text-danger">{errors.customSplits}</span>
           )}
         </div>
+      )}
 
-        <div className="expense-form__field">
-          <label className="expense-form__label expense-form__label--required" htmlFor="ef-paid-by">
-            결제자
-          </label>
-          <select
-            id="ef-paid-by"
-            className="expense-form__select"
-            value={paidBy}
-            onChange={(e) => setPaidBy(e.target.value)}
-          >
-            {members
-              .filter((m) => participantIds.includes(m.user_id))
-              .map((m) => (
-                <option key={m.user_id} value={m.user_id}>
-                  {m.username}
-                </option>
-              ))}
-          </select>
-        </div>
-
-        {splitType === SPLIT_TYPE.EQUAL && equalSplits && participantIds.length > 0 && (
-          <div className="expense-form__split-preview">
-            {(() => {
-              const paidByMember = members.find((m) => m.user_id === paidBy);
-              const paidByAmt = equalSplits[paidBy] ?? 0;
-              const baseAmt = Object.values(equalSplits).find((v) => v !== paidByAmt) ?? paidByAmt;
-              return `각자 ${formatCurrency(baseAmt)} (결제자 ${paidByMember?.username ?? ''} ${formatCurrency(paidByAmt)})`;
-            })()}
-          </div>
-        )}
-
-        {splitType === SPLIT_TYPE.CUSTOM && (
-          <div className="expense-form__field">
-            <span className="expense-form__label">참여자별 금액</span>
-            {participantIds.map((id) => {
-              const member = members.find((m) => m.user_id === id);
-              return (
-                <div key={id} className="expense-form__custom-row">
-                  <span>{member?.username ?? id}</span>
-                  <input
-                    className="expense-form__custom-input"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={customSplits[id] ?? ''}
-                    onChange={(e) => handleCustomSplitChange(id, e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-              );
-            })}
-            <div
-              className={`expense-form__custom-total ${customMismatch ? 'expense-form__custom-total--mismatch' : 'expense-form__custom-total--ok'}`}
-            >
-              합계: {formatCurrency(customTotal)}
-              {isValidTotal && ` / 총액: ${formatCurrency(parsedTotal)}`}
-            </div>
-            {errors.customSplits && (
-              <span className="expense-form__error">{errors.customSplits}</span>
-            )}
-          </div>
-        )}
-
-        <div className="expense-form__actions">
-          <Button variant="outlined" type="button" onClick={onCancel}>
-            취소
-          </Button>
-          <Button type="submit" loading={isSubmitting}>
-            저장
-          </Button>
-        </div>
-      </form>
-    </>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outlined" type="button" onClick={onCancel}>
+          취소
+        </Button>
+        <Button type="submit" loading={isSubmitting}>
+          저장
+        </Button>
+      </div>
+    </form>
   );
 }

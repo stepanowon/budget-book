@@ -12,6 +12,15 @@ const CATEGORY_KEYS = {
   list: (groupId: string) => ['categories', groupId] as const,
 };
 
+const btnOutlined =
+  'inline-flex items-center justify-center px-5 py-2 bg-transparent text-primary border border-border rounded text-sm font-medium font-sans cursor-pointer min-h-[44px] hover:bg-primary-light transition-colors';
+const btnDangerSm =
+  'inline-flex items-center justify-center px-3.5 py-1.5 bg-transparent text-danger border border-danger rounded text-[13px] font-medium font-sans cursor-pointer min-h-[44px] min-w-[44px] hover:bg-danger-light transition-colors';
+const btnDangerFilled =
+  'inline-flex items-center justify-center px-5 py-2 bg-danger text-white border-0 rounded text-sm font-medium font-sans cursor-pointer min-h-[44px] hover:bg-[#b71c1c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+const formInput =
+  'w-full h-10 px-3 border border-border rounded text-sm text-[#202124] bg-white font-sans box-border outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-colors';
+
 export default function CategoryPage() {
   const { groupId } = useParams<{ groupId: string }>();
   const id = groupId ?? '';
@@ -67,7 +76,7 @@ export default function CategoryPage() {
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+      <div className="flex justify-center p-12">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -79,197 +88,27 @@ export default function CategoryPage() {
 
   return (
     <>
-      <style>{`
-        .category-page {
-          padding: var(--space-6) var(--space-8);
-          max-width: 640px;
-          margin: 0 auto;
-        }
-        .category-page__title {
-          font-size: 22px;
-          font-weight: 500;
-          color: var(--color-text-primary);
-          margin: 0 0 var(--space-6);
-        }
-        .category-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-          margin-bottom: var(--space-6);
-        }
-        .category-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 16px;
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-        }
-        .category-item__info {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-        }
-        .category-item__name {
-          font-size: 14px;
-          color: var(--color-text-primary);
-        }
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          height: 22px;
-          padding: 0 10px;
-          border-radius: var(--radius-pill);
-          font-size: 12px;
-          font-weight: 500;
-          white-space: nowrap;
-        }
-        .badge--system {
-          background: var(--color-border-light);
-          color: var(--color-text-secondary);
-        }
-        .badge--group {
-          background: var(--color-primary-light);
-          color: var(--color-primary);
-        }
-        .add-form {
-          display: flex;
-          gap: var(--space-2);
-          align-items: flex-end;
-        }
-        .add-form__input-wrap {
-          flex: 1;
-        }
-        .form-label {
-          display: block;
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-          margin-bottom: var(--space-1);
-        }
-        .form-input {
-          width: 100%;
-          height: 40px;
-          padding: 0 12px;
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          font-size: 14px;
-          color: var(--color-text-primary);
-          background: var(--color-surface);
-          font-family: var(--font-family);
-          box-sizing: border-box;
-          transition: border-color var(--transition-fast);
-        }
-        .form-input:focus {
-          border-color: var(--color-primary);
-          outline: 2px solid var(--color-primary-light);
-          outline-offset: 0;
-        }
-        .form-error {
-          font-size: 12px;
-          color: var(--color-danger);
-          margin-top: var(--space-1);
-        }
-        .btn-primary {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 8px 20px;
-          background: var(--color-primary);
-          color: #fff;
-          border: none;
-          border-radius: var(--radius-sm);
-          font-size: 14px;
-          font-weight: 500;
-          font-family: var(--font-family);
-          cursor: pointer;
-          min-height: 44px;
-          transition: background var(--transition-fast);
-        }
-        .btn-primary:hover:not(:disabled) { background: var(--color-primary-dark); }
-        .btn-primary:disabled {
-          background: var(--color-border);
-          color: var(--color-text-disabled);
-          cursor: not-allowed;
-        }
-        .btn-outlined {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 7px 19px;
-          background: transparent;
-          color: var(--color-primary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          font-size: 14px;
-          font-weight: 500;
-          font-family: var(--font-family);
-          cursor: pointer;
-          min-height: 44px;
-          transition: background var(--transition-fast);
-        }
-        .btn-outlined:hover { background: var(--color-primary-light); }
-        .btn-danger {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 6px 14px;
-          background: transparent;
-          color: var(--color-danger);
-          border: 1px solid var(--color-danger);
-          border-radius: var(--radius-sm);
-          font-size: 13px;
-          font-weight: 500;
-          font-family: var(--font-family);
-          cursor: pointer;
-          min-height: 44px;
-          min-width: 44px;
-          transition: background var(--transition-fast);
-        }
-        .btn-danger:hover { background: var(--color-danger-light); }
-        .btn-danger--filled {
-          background: var(--color-danger);
-          color: #fff;
-        }
-        .btn-danger--filled:hover { background: #b71c1c; }
-        .modal-footer-btns {
-          display: flex;
-          justify-content: flex-end;
-          gap: var(--space-2);
-        }
-        .delete-warning {
-          font-size: 13px;
-          color: var(--color-danger);
-          margin-top: var(--space-2);
-        }
-        .confirm-text {
-          font-size: 14px;
-          color: var(--color-text-primary);
-          margin: 0;
-        }
-        .section-divider {
-          border: none;
-          border-top: 1px solid var(--color-border);
-          margin: var(--space-6) 0;
-        }
-      `}</style>
+      <div className="max-w-[640px] mx-auto">
+        <h1 className="text-[22px] font-medium text-[#202124] m-0 mb-6">카테고리 관리</h1>
 
-      <div className="category-page">
-        <h1 className="category-page__title">카테고리 관리</h1>
-
-        <ul className="category-list" role="list">
+        <ul className="flex flex-col gap-2 mb-6" role="list">
           {(categories ?? []).map((cat) => (
-            <li key={cat.id} className="category-item">
-              <div className="category-item__info">
-                <span className="category-item__name">{cat.name}</span>
-                <span className={`badge badge--${cat.type === 'SYSTEM' ? 'system' : 'group'}`}>
+            <li key={cat.id} className="flex items-center justify-between px-4 py-3 bg-white border border-border rounded">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-[#202124]">{cat.name}</span>
+                <span
+                  className={`inline-flex items-center h-[22px] px-2.5 rounded-pill text-xs font-medium whitespace-nowrap ${
+                    cat.type === 'SYSTEM'
+                      ? 'bg-border text-neutral'
+                      : 'bg-primary-light text-primary'
+                  }`}
+                >
                   {cat.type === 'SYSTEM' ? 'SYSTEM' : 'GROUP'}
                 </span>
               </div>
               {isManager && cat.type === 'GROUP' && (
                 <button
-                  className="btn-danger"
+                  className={btnDangerSm}
                   onClick={() => setDeletingCategory(cat)}
                 >
                   삭제
@@ -281,15 +120,15 @@ export default function CategoryPage() {
 
         {isManager && (
           <>
-            <hr className="section-divider" />
-            <form className="add-form" onSubmit={handleAddSubmit} noValidate>
-              <div className="add-form__input-wrap">
-                <label className="form-label" htmlFor="category-name">
+            <hr className="border-0 border-t border-border my-6" />
+            <form className="flex gap-2 items-end" onSubmit={handleAddSubmit} noValidate>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-neutral mb-1" htmlFor="category-name">
                   새 카테고리 이름
                 </label>
                 <input
                   id="category-name"
-                  className="form-input"
+                  className={formInput}
                   type="text"
                   placeholder="카테고리 이름 입력"
                   value={newName}
@@ -298,10 +137,10 @@ export default function CategoryPage() {
                     setAddError('');
                   }}
                 />
-                {addError && <p className="form-error">{addError}</p>}
+                {addError && <p className="text-xs text-danger mt-1">{addError}</p>}
               </div>
               <button
-                className="btn-primary"
+                className="inline-flex items-center justify-center px-5 py-2 bg-primary text-white border-0 rounded text-sm font-medium font-sans cursor-pointer min-h-[44px] hover:bg-primary-dark transition-colors disabled:bg-border disabled:text-[#bdc1c6] disabled:cursor-not-allowed"
                 type="submit"
                 disabled={isAdding || !newName.trim()}
               >
@@ -318,12 +157,12 @@ export default function CategoryPage() {
         onClose={() => setDeletingCategory(null)}
         title="카테고리 삭제"
         footer={
-          <div className="modal-footer-btns">
-            <button className="btn-outlined" onClick={() => setDeletingCategory(null)}>
+          <div className="flex justify-end gap-2">
+            <button className={btnOutlined} onClick={() => setDeletingCategory(null)}>
               취소
             </button>
             <button
-              className="btn-danger btn-danger--filled"
+              className={btnDangerFilled}
               onClick={() => {
                 if (deletingCategory) deleteCategory(deletingCategory.id);
               }}
@@ -334,10 +173,10 @@ export default function CategoryPage() {
           </div>
         }
       >
-        <p className="confirm-text">
+        <p className="text-sm text-[#202124] m-0">
           <strong>{deletingCategory?.name ?? ''}</strong> 카테고리를 삭제하시겠습니까?
         </p>
-        <p className="delete-warning">
+        <p className="text-[13px] text-danger mt-2">
           삭제 시 해당 카테고리 지출은 기타로 재분류됩니다.
         </p>
       </Modal>

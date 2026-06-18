@@ -46,51 +46,49 @@ function SettlementDetailPanel({
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-4)' }}>
+      <div className="flex justify-center p-4">
         <LoadingSpinner size="sm" />
       </div>
     );
   }
 
   return (
-    <div className="settlement-detail">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-2)' }}>
+    <div>
+      <div className="flex justify-end mb-2">
         <Button variant="outlined" size="sm" onClick={() => void handleExport()} loading={exportingId}>
           엑셀 내보내기
         </Button>
       </div>
-      <table className="settlement-detail__table" aria-label="정산 상세">
+      <table className="w-full border-collapse text-sm" aria-label="정산 상세">
         <thead>
           <tr>
-            <th>멤버</th>
-            <th>결제액</th>
-            <th>분담액</th>
-            <th>차액</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">멤버</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">결제액</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">분담액</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">차액</th>
           </tr>
         </thead>
         <tbody>
           {details.map((detail) => {
             const balance = detail.balance;
             return (
-              <tr key={detail.user_id}>
-                <td>{detail.username}</td>
-                <td style={{ fontVariantNumeric: 'tabular-nums' }}>
+              <tr key={detail.user_id} className="[&:last-child_td]:border-b-0">
+                <td className="px-3 py-2 border-b border-border">{detail.username}</td>
+                <td className="px-3 py-2 border-b border-border [font-variant-numeric:tabular-nums]">
                   {formatCurrency(detail.total_paid)}
                 </td>
-                <td style={{ fontVariantNumeric: 'tabular-nums' }}>
+                <td className="px-3 py-2 border-b border-border [font-variant-numeric:tabular-nums]">
                   {formatCurrency(detail.total_share)}
                 </td>
                 <td
-                  style={{
-                    fontVariantNumeric: 'tabular-nums',
-                    fontWeight: 700,
-                    color: balance >= 0 ? '#1e8e3e' : '#d93025',
-                  }}
+                  className={`px-3 py-2 border-b border-border [font-variant-numeric:tabular-nums] font-bold ${
+                    balance >= 0 ? 'text-success' : 'text-danger'
+                  }`}
                 >
                   {balance >= 0 ? (
-                    <>+{formatCurrency(balance)} <span style={{ fontSize: 12 }}>받을 금액</span></>
+                    <>+{formatCurrency(balance)} <span className="text-xs font-normal">받을 금액</span></>
                   ) : (
-                    <>{formatCurrency(Math.abs(balance))} <span style={{ fontSize: 12 }}>낼 금액</span></>
+                    <>{formatCurrency(Math.abs(balance))} <span className="text-xs font-normal">낼 금액</span></>
                   )}
                 </td>
               </tr>
@@ -155,129 +153,36 @@ export default function SettlementPage() {
     );
   }
 
+  const dateInputClass =
+    'px-3 py-2 border border-border rounded text-sm min-h-[44px] font-sans text-[#202124] bg-white outline-none focus:border-primary transition-colors';
+
   return (
     <>
-      <style>{`
-        .settlement-page { display: flex; flex-direction: column; gap: var(--space-8); }
-        .settlement-page__title {
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--color-text-primary);
-          margin: 0 0 var(--space-4);
-        }
-        .settlement-run-form {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--border-radius);
-          padding: var(--space-6);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
-          max-width: 480px;
-        }
-        .settlement-run-form__row {
-          display: flex;
-          gap: var(--space-4);
-          flex-wrap: wrap;
-        }
-        .settlement-run-form__field {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-1);
-          flex: 1;
-          min-width: 140px;
-        }
-        .settlement-run-form__label {
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-        }
-        .settlement-run-form__input {
-          padding: 8px 12px;
-          border: 1px solid var(--color-border);
-          border-radius: var(--border-radius);
-          font-size: 14px;
-          min-height: 44px;
-          font-family: var(--font-family);
-        }
-        .settlement-run-form__error {
-          font-size: 12px;
-          color: var(--color-danger);
-        }
-        .settlement-list { display: flex; flex-direction: column; gap: var(--space-3); }
-        .settlement-item {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--border-radius);
-          overflow: hidden;
-        }
-        .settlement-item__header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: var(--space-4);
-          cursor: pointer;
-          gap: var(--space-3);
-        }
-        .settlement-item__header:hover { background: var(--color-background); }
-        .settlement-item__period {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--color-text-primary);
-        }
-        .settlement-item__meta {
-          font-size: 12px;
-          color: var(--color-text-secondary);
-          margin-top: 2px;
-        }
-        .settlement-item__body {
-          border-top: 1px solid var(--color-border);
-          padding: var(--space-4);
-        }
-        .settlement-detail__table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 14px;
-        }
-        .settlement-detail__table th {
-          text-align: left;
-          padding: var(--space-2) var(--space-3);
-          background: var(--color-background);
-          color: var(--color-text-secondary);
-          font-size: 12px;
-          border-bottom: 1px solid var(--color-border);
-        }
-        .settlement-detail__table td {
-          padding: var(--space-2) var(--space-3);
-          border-bottom: 1px solid var(--color-border);
-        }
-        .settlement-detail__table tr:last-child td { border-bottom: none; }
-      `}</style>
-      <div className="settlement-page">
+      <div className="flex flex-col gap-8">
         {isManager && (
           <section>
-            <h2 className="settlement-page__title">정산 실행</h2>
-            <div className="settlement-run-form">
-              <div className="settlement-run-form__row">
-                <div className="settlement-run-form__field">
-                  <label className="settlement-run-form__label" htmlFor="sp-start">
+            <h2 className="text-xl font-semibold text-[#202124] m-0 mb-4">정산 실행</h2>
+            <div className="bg-white border border-border rounded p-6 flex flex-col gap-4 max-w-[480px]">
+              <div className="flex gap-4 flex-wrap">
+                <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                  <label className="text-xs font-medium text-neutral" htmlFor="sp-start">
                     시작일
                   </label>
                   <input
                     id="sp-start"
-                    className="settlement-run-form__input"
+                    className={dateInputClass}
                     type="date"
                     value={periodStart}
                     onChange={(e) => setPeriodStart(e.target.value)}
                   />
                 </div>
-                <div className="settlement-run-form__field">
-                  <label className="settlement-run-form__label" htmlFor="sp-end">
+                <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                  <label className="text-xs font-medium text-neutral" htmlFor="sp-end">
                     종료일
                   </label>
                   <input
                     id="sp-end"
-                    className="settlement-run-form__input"
+                    className={dateInputClass}
                     type="date"
                     value={periodEnd}
                     onChange={(e) => setPeriodEnd(e.target.value)}
@@ -285,7 +190,7 @@ export default function SettlementPage() {
                 </div>
               </div>
               {dateError && (
-                <span className="settlement-run-form__error">{dateError}</span>
+                <span className="text-xs text-danger">{dateError}</span>
               )}
               <div>
                 <Button onClick={handleRunClick}>정산 실행</Button>
@@ -295,19 +200,19 @@ export default function SettlementPage() {
         )}
 
         <section ref={resultRef}>
-          <h2 className="settlement-page__title">정산 내역</h2>
+          <h2 className="text-xl font-semibold text-[#202124] m-0 mb-4">정산 내역</h2>
           {isLoadingList ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-8)' }}>
+            <div className="flex justify-center p-8">
               <LoadingSpinner />
             </div>
           ) : settlements.length === 0 ? (
             <EmptyState title="아직 정산 내역이 없습니다" />
           ) : (
-            <div className="settlement-list">
+            <div className="flex flex-col gap-3">
               {settlements.map((s) => (
-                <div key={s.id} className="settlement-item">
+                <div key={s.id} className="bg-white border border-border rounded overflow-hidden">
                   <div
-                    className="settlement-item__header"
+                    className="flex items-center justify-between p-4 cursor-pointer gap-3 hover:bg-[#f8f9fa] transition-colors"
                     onClick={() =>
                       setExpandedId((prev) => (prev === s.id ? null : s.id))
                     }
@@ -321,19 +226,19 @@ export default function SettlementPage() {
                     }}
                   >
                     <div>
-                      <div className="settlement-item__period">
+                      <div className="text-sm font-semibold text-[#202124]">
                         {formatDisplayDate(s.period_start)} ~ {formatDisplayDate(s.period_end)}
                       </div>
-                      <div className="settlement-item__meta">
+                      <div className="text-xs text-neutral mt-0.5">
                         실행일: {formatDisplayDateTime(s.created_at)}
                       </div>
                     </div>
-                    <span style={{ color: 'var(--color-neutral)', fontSize: 18 }}>
+                    <span className="text-neutral text-lg">
                       {expandedId === s.id ? '▲' : '▼'}
                     </span>
                   </div>
                   {expandedId === s.id && (
-                    <div className="settlement-item__body">
+                    <div className="border-t border-border p-4">
                       <SettlementDetailPanel groupId={groupId} settlementId={s.id} />
                     </div>
                   )}

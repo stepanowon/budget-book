@@ -21,79 +21,51 @@ export default function Table<T extends Record<string, unknown>>({
   emptyMessage = '데이터가 없습니다.',
 }: TableProps<T>) {
   return (
-    <>
-      <style>{`
-        .table-wrapper { width: 100%; overflow-x: auto; }
-        .table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 14px;
-          background: var(--color-surface);
-          border-radius: var(--border-radius);
-          overflow: hidden;
-        }
-        .table th {
-          text-align: left;
-          padding: var(--space-3) var(--space-4);
-          background: var(--color-background);
-          color: var(--color-text-secondary);
-          font-weight: 500;
-          font-size: 12px;
-          border-bottom: 1px solid var(--color-border);
-          white-space: nowrap;
-        }
-        .table td {
-          padding: var(--space-3) var(--space-4);
-          border-bottom: 1px solid var(--color-border);
-          color: var(--color-text-primary);
-          vertical-align: middle;
-        }
-        .table tr:last-child td { border-bottom: none; }
-        .table tr:hover td { background: var(--color-background); }
-        .table-loading, .table-empty {
-          text-align: center;
-          padding: var(--space-8);
-          color: var(--color-text-secondary);
-        }
-      `}</style>
-      <div className="table-wrapper">
-        <table className="table">
-          <thead>
+    <div className="w-full overflow-x-auto">
+      <table className="w-full border-collapse text-sm bg-white rounded overflow-hidden">
+        <thead>
+          <tr>
+            {columns.map((col) => (
+              <th
+                key={col.key}
+                className="text-left px-4 py-3 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border whitespace-nowrap"
+              >
+                {col.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
             <tr>
-              {columns.map((col) => (
-                <th key={col.key}>{col.header}</th>
-              ))}
+              <td colSpan={columns.length} className="text-center p-8 text-neutral">
+                <LoadingSpinner size="md" />
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={columns.length} className="table-loading">
-                  <LoadingSpinner size="md" />
-                </td>
+          ) : data.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length} className="text-center p-8 text-neutral">
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : (
+            data.map((row, rowIdx) => (
+              <tr key={rowIdx} className="hover:[&>td]:bg-[#f8f9fa]">
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className="px-4 py-3 border-b border-border text-[#202124] align-middle last:border-b-0"
+                  >
+                    {col.render
+                      ? col.render(row)
+                      : String(row[col.key] ?? '')}
+                  </td>
+                ))}
               </tr>
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="table-empty">
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              data.map((row, rowIdx) => (
-                <tr key={rowIdx}>
-                  {columns.map((col) => (
-                    <td key={col.key}>
-                      {col.render
-                        ? col.render(row)
-                        : String(row[col.key] ?? '')}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }

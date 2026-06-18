@@ -48,7 +48,13 @@ router.get(
   groupController.getGroupInvitations,
 );
 
-// 멤버 제거
+// 멤버 조회 / 제거
+router.get(
+  '/:groupId/members',
+  authenticate,
+  requireGroupMember,
+  groupController.getGroupMembers,
+);
 router.delete(
   '/:groupId/members/:userId',
   authenticate,

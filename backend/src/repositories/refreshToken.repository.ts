@@ -9,6 +9,7 @@ export async function saveRefreshToken(params: {
   await sql`
     INSERT INTO refresh_tokens (user_id, token, expires_at)
     VALUES (${params.user_id}, ${params.token}, ${params.expires_at})
+    ON CONFLICT (token) DO NOTHING
   `;
 }
 

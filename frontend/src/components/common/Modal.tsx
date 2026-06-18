@@ -76,95 +76,41 @@ export default function Modal({
   if (!isOpen) return null;
 
   return createPortal(
-    <>
-      <style>{`
-        .modal-backdrop {
-          position: fixed; inset: 0;
-          background: rgba(0,0,0,.4);
-          display: flex; align-items: center; justify-content: center;
-          z-index: 1000;
-        }
-        .modal-dialog {
-          background: var(--color-surface);
-          border-radius: 8px;
-          box-shadow: 0 8px 24px rgba(0,0,0,.2);
-          min-width: 320px;
-          max-width: 90vw;
-          max-height: 90vh;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-        .modal-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: var(--space-6) var(--space-6) var(--space-4);
-          border-bottom: 1px solid var(--color-border);
-        }
-        .modal-title {
-          font-size: 18px;
-          font-weight: 500;
-          color: var(--color-text-primary);
-          margin: 0;
-        }
-        .modal-close-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: var(--color-neutral);
-          font-size: 20px;
-          line-height: 1;
-          padding: var(--space-2);
-          border-radius: var(--border-radius);
-          min-width: 44px;
-          min-height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .modal-close-btn:hover { background: var(--color-background); }
-        .modal-body { padding: var(--space-6); overflow-y: auto; flex: 1; }
-        .modal-footer {
-          padding: var(--space-4) var(--space-6);
-          border-top: 1px solid var(--color-border);
-          display: flex;
-          justify-content: flex-end;
-          gap: var(--space-2);
-        }
-      `}</style>
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1000]"
+      onClick={onClose}
+    >
       <div
-        className="modal-backdrop"
-        onClick={onClose}
+        ref={dialogRef}
+        className="bg-white rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.2)] min-w-[320px] max-w-[90vw] max-h-[90vh] flex flex-col overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
       >
-        <div
-          ref={dialogRef}
-          className="modal-dialog"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={title ? 'modal-title' : undefined}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={handleKeyDown}
-        >
-          {(title !== undefined) && (
-            <div className="modal-header">
-              <h2 id="modal-title" className="modal-title">
-                {title}
-              </h2>
-              <button
-                className="modal-close-btn"
-                onClick={onClose}
-                aria-label="닫기"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-          <div className="modal-body">{children}</div>
-          {footer && <div className="modal-footer">{footer}</div>}
-        </div>
+        {title !== undefined && (
+          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
+            <h2 id="modal-title" className="text-lg font-medium text-[#202124] m-0">
+              {title}
+            </h2>
+            <button
+              className="bg-transparent border-0 cursor-pointer text-neutral text-xl leading-none p-2 rounded min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#f8f9fa] transition-colors"
+              onClick={onClose}
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        <div className="p-6 overflow-y-auto flex-1">{children}</div>
+        {footer && (
+          <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
+            {footer}
+          </div>
+        )}
       </div>
-    </>,
+    </div>,
     document.body,
   );
 }

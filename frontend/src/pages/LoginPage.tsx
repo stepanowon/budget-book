@@ -55,32 +55,9 @@ export default function LoginPage() {
 
   return (
     <>
-      <style>{`
-        .login-form { display: flex; flex-direction: column; gap: var(--space-4); }
-        .login-form__error {
-          padding: var(--space-3) var(--space-4);
-          background: var(--color-danger-light, #fce8e6);
-          border: 1px solid var(--color-danger, #d93025);
-          border-radius: var(--border-radius);
-          font-size: 13px;
-          color: var(--color-danger, #d93025);
-        }
-        .login-form__submit { width: 100%; margin-top: var(--space-2); }
-        .login-form__footer {
-          text-align: center;
-          font-size: 13px;
-          color: var(--color-neutral, #5f6368);
-          margin-top: var(--space-2);
-        }
-        .login-form__footer a {
-          color: var(--color-primary, #1a73e8);
-          text-decoration: none;
-        }
-        .login-form__footer a:hover { text-decoration: underline; }
-      `}</style>
-      <form className="login-form" onSubmit={handleSubmit} noValidate>
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
         {formError && (
-          <p className="login-form__error" role="alert">
+          <p className="px-4 py-3 bg-danger-light border border-danger rounded text-[13px] text-danger" role="alert">
             {formError}
           </p>
         )}
@@ -108,14 +85,16 @@ export default function LoginPage() {
           size="md"
           loading={isLoading}
           disabled={isLoading}
-          className="login-form__submit"
+          className="w-full mt-2"
         >
           로그인
         </Button>
       </form>
-      <p className="login-form__footer">
+      <p className="text-center text-[13px] text-neutral mt-2">
         계정이 없으신가요?{' '}
-        <a href={ROUTES.SIGNUP}>회원가입</a>
+        <a href={ROUTES.SIGNUP} className="text-primary no-underline hover:underline">
+          회원가입
+        </a>
       </p>
     </>
   );

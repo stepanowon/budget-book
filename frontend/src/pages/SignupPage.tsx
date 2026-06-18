@@ -67,22 +67,7 @@ export default function SignupPage() {
 
   return (
     <>
-      <style>{`
-        .signup-form { display: flex; flex-direction: column; gap: var(--space-4); }
-        .signup-form__submit { width: 100%; margin-top: var(--space-2); }
-        .signup-form__footer {
-          text-align: center;
-          font-size: 13px;
-          color: var(--color-neutral, #5f6368);
-          margin-top: var(--space-2);
-        }
-        .signup-form__footer a {
-          color: var(--color-primary, #1a73e8);
-          text-decoration: none;
-        }
-        .signup-form__footer a:hover { text-decoration: underline; }
-      `}</style>
-      <form className="signup-form" onSubmit={handleSubmit} noValidate>
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
         <Input
           label="이메일"
           type="email"
@@ -116,14 +101,16 @@ export default function SignupPage() {
           size="md"
           loading={isSubmitting}
           disabled={isSubmitting}
-          className="signup-form__submit"
+          className="w-full mt-2"
         >
           회원가입
         </Button>
       </form>
-      <p className="signup-form__footer">
+      <p className="text-center text-[13px] text-neutral mt-2">
         이미 계정이 있으신가요?{' '}
-        <a href={ROUTES.LOGIN}>로그인</a>
+        <a href={ROUTES.LOGIN} className="text-primary no-underline hover:underline">
+          로그인
+        </a>
       </p>
     </>
   );

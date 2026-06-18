@@ -29,14 +29,41 @@ export async function addGroupMember(params: {
   return row as GroupMember;
 }
 
-export async function findGroupsByUserId(userId: string): Promise<Group[]> {
+export async function findGroupsByUserId(
+  userId: string,
+): Promise<(Group & { my_role: string; member_count: number })[]> {
   const rows = await sql`
-    SELECT g.* FROM groups g
-    JOIN group_members gm ON gm.group_id = g.id
-    WHERE gm.user_id = ${userId}
+    SELECT
+      g.*,
+      UPPER(g.status::text) AS status,
+      gm_me.role       AS my_role,
+      COUNT(gm_all.user_id)::int AS member_count
+    FROM groups g
+    JOIN group_members gm_me  ON gm_me.group_id  = g.id AND gm_me.user_id = ${userId}
+    JOIN group_members gm_all ON gm_all.group_id = g.id
+    GROUP BY g.id, gm_me.role
     ORDER BY g.created_at DESC
   `;
-  return rows as unknown as Group[];
+  return rows as unknown as (Group & { my_role: string; member_count: number })[];
+}
+
+export async function findGroupByIdForUser(
+  groupId: string,
+  userId: string,
+): Promise<(Group & { my_role: string; member_count: number }) | null> {
+  const [row] = await sql`
+    SELECT
+      g.*,
+      UPPER(g.status::text) AS status,
+      gm_me.role       AS my_role,
+      COUNT(gm_all.user_id)::int AS member_count
+    FROM groups g
+    JOIN group_members gm_me  ON gm_me.group_id  = g.id AND gm_me.user_id = ${userId}
+    JOIN group_members gm_all ON gm_all.group_id = g.id
+    WHERE g.id = ${groupId}
+    GROUP BY g.id, gm_me.role
+  `;
+  return (row as Group & { my_role: string; member_count: number }) ?? null;
 }
 
 export async function findGroupById(id: string): Promise<Group | null> {

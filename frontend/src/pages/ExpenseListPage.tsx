@@ -14,6 +14,9 @@ import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
 import * as reportApi from '@/api/reportApi';
 
+const filterInputClass =
+  'px-2.5 py-1.5 border border-border rounded text-sm font-sans min-h-[44px] text-[#202124] bg-white outline-none focus:border-primary';
+
 export default function ExpenseListPage() {
   const { groupId = '' } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
@@ -92,72 +95,10 @@ export default function ExpenseListPage() {
 
   return (
     <>
-      <style>{`
-        .expense-list-page { display: flex; flex-direction: column; gap: var(--space-6); }
-        .expense-list-page__header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: var(--space-3);
-        }
-        .expense-list-page__title {
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--color-text-primary);
-          margin: 0;
-        }
-        .expense-list-page__header-actions {
-          display: flex;
-          gap: var(--space-2);
-        }
-        .expense-list-page__filters {
-          display: flex;
-          gap: var(--space-3);
-          flex-wrap: wrap;
-          align-items: flex-end;
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--border-radius);
-          padding: var(--space-4);
-        }
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-1);
-          min-width: 140px;
-        }
-        .filter-group label {
-          font-size: 12px;
-          color: var(--color-text-secondary);
-          font-weight: 500;
-        }
-        .filter-group input,
-        .filter-group select {
-          padding: 6px 10px;
-          border: 1px solid var(--color-border);
-          border-radius: var(--border-radius);
-          font-size: 14px;
-          font-family: var(--font-family);
-          min-height: 44px;
-          color: var(--color-text-primary);
-          background: var(--color-surface);
-        }
-        .expense-list-page__list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-3);
-        }
-        .expense-list-page__loading {
-          display: flex;
-          justify-content: center;
-          padding: var(--space-8);
-        }
-      `}</style>
-      <div className="expense-list-page">
-        <div className="expense-list-page__header">
-          <h1 className="expense-list-page__title">지출 목록</h1>
-          <div className="expense-list-page__header-actions">
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h1 className="text-xl font-semibold text-[#202124] m-0">지출 목록</h1>
+          <div className="flex gap-2">
             <Button
               variant="outlined"
               size="sm"
@@ -177,29 +118,32 @@ export default function ExpenseListPage() {
           </div>
         </div>
 
-        <div className="expense-list-page__filters">
-          <div className="filter-group">
-            <label htmlFor="date-from">시작일</label>
+        <div className="flex gap-3 flex-wrap items-end bg-white border border-border rounded p-4">
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <label className="text-xs text-neutral font-medium" htmlFor="date-from">시작일</label>
             <input
               id="date-from"
+              className={filterInputClass}
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
-          <div className="filter-group">
-            <label htmlFor="date-to">종료일</label>
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <label className="text-xs text-neutral font-medium" htmlFor="date-to">종료일</label>
             <input
               id="date-to"
+              className={filterInputClass}
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
-          <div className="filter-group">
-            <label htmlFor="category-filter">카테고리</label>
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <label className="text-xs text-neutral font-medium" htmlFor="category-filter">카테고리</label>
             <select
               id="category-filter"
+              className={filterInputClass}
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
@@ -214,7 +158,7 @@ export default function ExpenseListPage() {
         </div>
 
         {isLoading ? (
-          <div className="expense-list-page__loading">
+          <div className="flex justify-center p-8">
             <LoadingSpinner />
           </div>
         ) : filteredExpenses.length === 0 ? (
@@ -227,7 +171,7 @@ export default function ExpenseListPage() {
             }}
           />
         ) : (
-          <div className="expense-list-page__list">
+          <div className="flex flex-col gap-3">
             {filteredExpenses.map((expense) => (
               <ExpenseCard
                 key={expense.id}

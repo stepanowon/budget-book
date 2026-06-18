@@ -16,6 +16,13 @@ interface FormErrors {
   end_date?: string;
 }
 
+const formInput =
+  'w-full h-10 px-3 border border-border rounded text-sm text-[#202124] bg-white font-sans box-border outline-none focus:border-primary focus:ring-2 focus:ring-primary-light transition-colors';
+const formInputError =
+  'w-full h-10 px-3 border border-danger rounded text-sm text-[#202124] bg-danger-light font-sans box-border outline-none focus:border-danger focus:ring-2 focus:ring-primary-light transition-colors';
+const labelRequired =
+  'block text-xs font-medium text-neutral mb-1 after:content-["_*"] after:text-danger';
+
 export default function GroupCreatePage() {
   const navigate = useNavigate();
   const { mutate: createGroup, isPending } = useCreateGroup();
@@ -70,208 +77,96 @@ export default function GroupCreatePage() {
   };
 
   return (
-    <>
-      <style>{`
-        .group-create-page {
-          padding: var(--space-6) var(--space-8);
-          max-width: 480px;
-          margin: 0 auto;
-        }
-        .group-create-page__title {
-          font-size: 22px;
-          font-weight: 500;
-          color: var(--color-text-primary);
-          margin: 0 0 var(--space-6);
-        }
-        .form-group {
-          margin-bottom: var(--space-4);
-        }
-        .form-label {
-          display: block;
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--color-text-secondary);
-          margin-bottom: var(--space-1);
-        }
-        .form-label--required::after {
-          content: ' *';
-          color: var(--color-danger);
-        }
-        .form-input {
-          width: 100%;
-          height: 40px;
-          padding: 0 12px;
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          font-size: 14px;
-          color: var(--color-text-primary);
-          background: var(--color-surface);
-          font-family: var(--font-family);
-          box-sizing: border-box;
-          transition: border-color var(--transition-fast);
-        }
-        .form-input:focus {
-          border-color: var(--color-primary);
-          outline: 2px solid var(--color-primary-light);
-          outline-offset: 0;
-        }
-        .form-input--error {
-          border-color: var(--color-danger);
-          background: var(--color-danger-light);
-        }
-        .form-error {
-          font-size: 12px;
-          color: var(--color-danger);
-          margin-top: var(--space-1);
-        }
-        .type-options {
-          display: flex;
-          gap: var(--space-3);
-        }
-        .type-option {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          cursor: pointer;
-          font-size: 14px;
-          color: var(--color-text-primary);
-          min-height: 44px;
-          padding: 0 var(--space-2);
-        }
-        .form-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: var(--space-2);
-          margin-top: var(--space-6);
-        }
-        .btn-primary {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 8px 24px;
-          background: var(--color-primary);
-          color: #fff;
-          border: none;
-          border-radius: var(--radius-sm);
-          font-size: 14px;
-          font-weight: 500;
-          font-family: var(--font-family);
-          cursor: pointer;
-          min-height: 44px;
-          transition: background var(--transition-fast);
-        }
-        .btn-primary:hover:not(:disabled) {
-          background: var(--color-primary-dark);
-        }
-        .btn-primary:disabled {
-          background: var(--color-border);
-          color: var(--color-text-disabled);
-          cursor: not-allowed;
-        }
-        .btn-outlined {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 7px 23px;
-          background: transparent;
-          color: var(--color-primary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          font-size: 14px;
-          font-weight: 500;
-          font-family: var(--font-family);
-          cursor: pointer;
-          min-height: 44px;
-          transition: background var(--transition-fast), border-color var(--transition-fast);
-        }
-        .btn-outlined:hover {
-          background: var(--color-primary-light);
-          border-color: #c5d9f6;
-        }
-      `}</style>
-      <div className="group-create-page">
-        <h1 className="group-create-page__title">그룹 만들기</h1>
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-group">
-            <label className="form-label form-label--required" htmlFor="group-name">
-              그룹명
-            </label>
-            <input
-              id="group-name"
-              className={`form-input${errors.name ? ' form-input--error' : ''}`}
-              type="text"
-              placeholder="그룹명을 입력하세요"
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            />
-            {errors.name && <p className="form-error">{errors.name}</p>}
-          </div>
+    <div className="max-w-[480px] mx-auto">
+      <h1 className="text-[22px] font-medium text-[#202124] m-0 mb-6">그룹 만들기</h1>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="mb-4">
+          <label className={labelRequired} htmlFor="group-name">
+            그룹명
+          </label>
+          <input
+            id="group-name"
+            className={errors.name ? formInputError : formInput}
+            type="text"
+            placeholder="그룹명을 입력하세요"
+            value={form.name}
+            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+          />
+          {errors.name && <p className="text-xs text-danger mt-1">{errors.name}</p>}
+        </div>
 
-          <div className="form-group">
-            <span className="form-label">유형</span>
-            <div className="type-options">
-              <label className="type-option">
-                <input
-                  type="radio"
-                  name="group-type"
-                  value="UNLIMITED"
-                  checked={form.type === 'UNLIMITED'}
-                  onChange={() => setForm((prev) => ({ ...prev, type: 'UNLIMITED', end_date: '' }))}
-                />
-                상시
-              </label>
-              <label className="type-option">
-                <input
-                  type="radio"
-                  name="group-type"
-                  value="LIMITED"
-                  checked={form.type === 'LIMITED'}
-                  onChange={() => setForm((prev) => ({ ...prev, type: 'LIMITED' }))}
-                />
-                기간제
-              </label>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label form-label--required" htmlFor="group-start-date">
-              시작일
-            </label>
-            <input
-              id="group-start-date"
-              className="form-input"
-              type="date"
-              value={form.start_date}
-              onChange={(e) => setForm((prev) => ({ ...prev, start_date: e.target.value }))}
-            />
-          </div>
-
-          {form.type === 'LIMITED' && (
-            <div className="form-group">
-              <label className="form-label form-label--required" htmlFor="group-end-date">
-                종료일
-              </label>
+        <div className="mb-4">
+          <span className="block text-xs font-medium text-neutral mb-1">유형</span>
+          <div className="flex gap-3">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-[#202124] min-h-[44px] px-2">
               <input
-                id="group-end-date"
-                className={`form-input${errors.end_date ? ' form-input--error' : ''}`}
-                type="date"
-                value={form.end_date}
-                onChange={(e) => setForm((prev) => ({ ...prev, end_date: e.target.value }))}
+                type="radio"
+                name="group-type"
+                value="UNLIMITED"
+                checked={form.type === 'UNLIMITED'}
+                onChange={() => setForm((prev) => ({ ...prev, type: 'UNLIMITED', end_date: '' }))}
               />
-              {errors.end_date && <p className="form-error">{errors.end_date}</p>}
-            </div>
-          )}
-
-          <div className="form-actions">
-            <button type="button" className="btn-outlined" onClick={() => navigate(-1)}>
-              취소
-            </button>
-            <button type="submit" className="btn-primary" disabled={isPending}>
-              {isPending ? '생성 중...' : '그룹 만들기'}
-            </button>
+              상시
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-[#202124] min-h-[44px] px-2">
+              <input
+                type="radio"
+                name="group-type"
+                value="LIMITED"
+                checked={form.type === 'LIMITED'}
+                onChange={() => setForm((prev) => ({ ...prev, type: 'LIMITED' }))}
+              />
+              기간제
+            </label>
           </div>
-        </form>
-      </div>
-    </>
+        </div>
+
+        <div className="mb-4">
+          <label className={labelRequired} htmlFor="group-start-date">
+            시작일
+          </label>
+          <input
+            id="group-start-date"
+            className={formInput}
+            type="date"
+            value={form.start_date}
+            onChange={(e) => setForm((prev) => ({ ...prev, start_date: e.target.value }))}
+          />
+        </div>
+
+        {form.type === 'LIMITED' && (
+          <div className="mb-4">
+            <label className={labelRequired} htmlFor="group-end-date">
+              종료일
+            </label>
+            <input
+              id="group-end-date"
+              className={errors.end_date ? formInputError : formInput}
+              type="date"
+              value={form.end_date}
+              onChange={(e) => setForm((prev) => ({ ...prev, end_date: e.target.value }))}
+            />
+            {errors.end_date && <p className="text-xs text-danger mt-1">{errors.end_date}</p>}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 mt-6">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center px-6 py-2 bg-transparent text-primary border border-border rounded text-sm font-medium font-sans cursor-pointer min-h-[44px] hover:bg-primary-light hover:border-[#c5d9f6] transition-colors"
+            onClick={() => navigate(-1)}
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center px-6 py-2 bg-primary text-white border-0 rounded text-sm font-medium font-sans cursor-pointer min-h-[44px] hover:bg-primary-dark transition-colors disabled:bg-border disabled:text-[#bdc1c6] disabled:cursor-not-allowed"
+            disabled={isPending}
+          >
+            {isPending ? '생성 중...' : '그룹 만들기'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

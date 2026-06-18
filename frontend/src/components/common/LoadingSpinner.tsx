@@ -5,38 +5,26 @@ interface LoadingSpinnerProps {
   label?: string;
 }
 
-const sizeMap: Record<SpinnerSize, number> = {
-  sm: 16,
-  md: 24,
-  lg: 40,
+const sizeClasses: Record<SpinnerSize, string> = {
+  sm: 'w-4 h-4 border-2',
+  md: 'w-6 h-6 border-[3px]',
+  lg: 'w-10 h-10 border-4',
 };
 
 export default function LoadingSpinner({
   size = 'md',
   label = '로딩 중...',
 }: LoadingSpinnerProps) {
-  const px = sizeMap[size];
-
   return (
     <>
       <style>{`
         @keyframes spinner-rotate { to { transform: rotate(360deg); } }
-        .loading-spinner {
-          display: inline-block;
-          border-radius: 50%;
-          border: 3px solid var(--color-border);
-          border-top-color: var(--color-primary);
-          animation: spinner-rotate 0.7s linear infinite;
-          flex-shrink: 0;
-        }
-        .loading-spinner--sm { border-width: 2px; }
-        .loading-spinner--lg { border-width: 4px; }
+        .spinner-anim { animation: spinner-rotate 0.7s linear infinite; }
       `}</style>
       <span
         role="status"
         aria-label={label}
-        className={`loading-spinner loading-spinner--${size}`}
-        style={{ width: px, height: px }}
+        className={`inline-block rounded-full border-border border-t-primary flex-shrink-0 spinner-anim ${sizeClasses[size]}`}
       />
     </>
   );

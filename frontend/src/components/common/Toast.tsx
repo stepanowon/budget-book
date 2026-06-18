@@ -9,10 +9,10 @@ interface ToastProps {
   duration?: number;
 }
 
-const typeStyles: Record<ToastType, { bg: string; border: string; color: string }> = {
-  success: { bg: 'var(--color-success-light)', border: 'var(--color-success)', color: 'var(--color-success)' },
-  error:   { bg: 'var(--color-danger-light)',  border: 'var(--color-danger)',  color: 'var(--color-danger)'  },
-  info:    { bg: 'var(--color-primary-light)', border: 'var(--color-primary)', color: 'var(--color-primary)' },
+const typeClasses: Record<ToastType, string> = {
+  success: 'bg-success-light border-success text-success',
+  error:   'bg-danger-light border-danger text-danger',
+  info:    'bg-primary-light border-primary text-primary',
 };
 
 export default function Toast({
@@ -27,60 +27,25 @@ export default function Toast({
     return () => clearTimeout(timer);
   }, [duration, onClose]);
 
-  const { bg, border, color } = typeStyles[type];
-
   return (
     <>
       <style>{`
-        .toast {
-          position: fixed;
-          bottom: var(--space-6);
-          right: var(--space-6);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: var(--space-4);
-          padding: var(--space-3) var(--space-4);
-          border-radius: var(--border-radius);
-          border: 1px solid;
-          box-shadow: 0 4px 12px rgba(0,0,0,.15);
-          font-size: 14px;
-          z-index: 2000;
-          min-width: 240px;
-          max-width: 400px;
-          animation: toast-in 0.2s ease;
-        }
         @keyframes toast-in {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .toast-close {
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-size: 16px;
-          line-height: 1;
-          padding: var(--space-1);
-          min-width: 44px;
-          min-height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: var(--border-radius);
-        }
+        .toast-anim { animation: toast-in 0.2s ease; }
       `}</style>
       <div
         role="status"
         aria-live="polite"
-        className="toast"
-        style={{ background: bg, borderColor: border, color }}
+        className={`toast-anim fixed bottom-6 right-6 flex items-center justify-between gap-4 px-4 py-3 rounded border shadow-[0_4px_12px_rgba(0,0,0,0.15)] text-sm z-[2000] min-w-[240px] max-w-[400px] ${typeClasses[type]}`}
       >
         <span>{message}</span>
         <button
-          className="toast-close"
+          className="bg-transparent border-0 cursor-pointer text-base leading-none p-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded transition-colors hover:opacity-80 font-sans"
           onClick={onClose}
           aria-label="닫기"
-          style={{ color }}
         >
           ✕
         </button>

@@ -44,3 +44,21 @@ export async function findGroupInvitations(groupId: string): Promise<Invitation[
   `;
   return rows as unknown as Invitation[];
 }
+
+export async function findMyInvitations(userId: string): Promise<
+  (Invitation & { group_name: string; inviter_username: string })[]
+> {
+  const rows = await sql`
+    SELECT
+      i.*,
+      g.name AS group_name,
+      u.username AS inviter_username
+    FROM invitations i
+    JOIN groups g ON g.id = i.group_id
+    JOIN users u ON u.id = i.inviter_id
+    WHERE i.invitee_id = ${userId}
+      AND i.status = 'PENDING'
+    ORDER BY i.created_at DESC
+  `;
+  return rows as unknown as (Invitation & { group_name: string; inviter_username: string })[];
+}
