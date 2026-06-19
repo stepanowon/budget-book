@@ -5,6 +5,20 @@
 
 ---
 
+## Demo
+
+**https://budget-book-fe.vercel.app**
+
+| 계정 | 역할 | 패스워드 |
+|------|------|----------|
+| user1@test.com | MANAGER (관리자) | asdf!2345 |
+| user2@test.com | MEMBER | asdf!2345 |
+| user3@test.com | MEMBER | asdf!2345 |
+
+`user1@test.com`으로 로그인한 후 그룹 목록에서 **남미여행** 그룹을 선택하면 지출 기록, 정산, 리포트 등 주요 기능을 바로 테스트해볼 수 있습니다.
+
+---
+
 ## 주요 기능
 
 - 그룹 멤버 누구나 지출을 입력하여 기록 부담 분산
