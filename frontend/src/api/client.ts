@@ -8,8 +8,10 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3000/api/v1',
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 
@@ -34,7 +36,7 @@ apiClient.interceptors.response.use(
           success: boolean;
           data: { accessToken: string };
         }>(
-          'http://localhost:3000/api/v1/auth/refresh',
+          `${BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true },
         );
