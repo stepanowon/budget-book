@@ -10,7 +10,7 @@ interface ExpenseFormProps {
   categories: CategoryResponse[];
   members: GroupMemberResponse[];
   currentUserId: string;
-  initialValues?: Partial<CreateExpenseRequest & { paid_by: string; custom_splits: Record<string, string> }>;
+  initialValues?: Partial<Omit<CreateExpenseRequest, 'custom_splits'> & { paid_by: string; custom_splits: Record<string, string> }>;
   onSubmit: (data: CreateExpenseRequest) => void;
   isSubmitting: boolean;
   onCancel: () => void;
