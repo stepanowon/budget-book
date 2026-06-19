@@ -73,6 +73,9 @@ export default function ExpenseFormPage() {
         split_type: existingExpense.split_type,
         participant_ids: existingExpense.splits.map((s) => s.user_id),
         paid_by: existingExpense.paid_by,
+        custom_splits: Object.fromEntries(
+          existingExpense.splits.map((s) => [s.user_id, String(s.amount)]),
+        ),
       }
     : undefined;
 

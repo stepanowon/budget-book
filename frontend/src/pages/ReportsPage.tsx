@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useGroups } from '@/hooks/useGroups';
 import * as reportApi from '@/api/reportApi';
@@ -6,6 +6,7 @@ import CategoryPieChart from '@/components/charts/CategoryPieChart';
 import MemberPieChart from '@/components/charts/MemberPieChart';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import EmptyState from '@/components/common/EmptyState';
+import Button from '@/components/common/Button';
 
 export default function ReportsPage() {
   const today = new Date().toISOString().slice(0, 10);
@@ -14,6 +15,8 @@ export default function ReportsPage() {
   const [groupId, setGroupId] = useState('');
   const [dateFrom, setDateFrom] = useState(firstOfMonth);
   const [dateTo, setDateTo] = useState(today);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const { data: groups = [] } = useGroups();
 
@@ -42,6 +45,45 @@ export default function ReportsPage() {
 
   const isLoading = isLoadingCat || isLoadingMember;
 
+  async function handleExportPdf() {
+    if (!reportRef.current) return;
+    setIsExportingPdf(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const groupName = groups.find((g) => g.id === groupId)?.name ?? '리포트';
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let remaining = imgHeight;
+      let firstPage = true;
+
+      while (remaining > 0) {
+        const sliceHeight = Math.min(remaining, pageHeight - 20);
+        const sliceRatio = sliceHeight / imgHeight;
+        const srcY = ((imgHeight - remaining) / imgHeight) * canvas.height;
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = canvas.height * sliceRatio;
+        const ctx = sliceCanvas.getContext('2d');
+        if (ctx) ctx.drawImage(canvas, 0, srcY, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
+        if (!firstPage) pdf.addPage();
+        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgWidth, sliceHeight);
+        remaining -= sliceHeight;
+        firstPage = false;
+      }
+
+      pdf.save(`${groupName}_${dateFrom}_${dateTo}.pdf`);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
+
   const filterControlClass =
     'px-3 py-2 border border-border rounded text-sm min-h-[44px] font-sans text-[#202124] bg-white outline-none focus:border-primary transition-colors';
 
@@ -49,7 +91,7 @@ export default function ReportsPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold text-[#202124] m-0">리포트</h1>
 
-      <div className="flex gap-4 flex-wrap items-end bg-white border border-border rounded p-4">
+      <div className="flex gap-4 flex-wrap items-end bg-white border border-border rounded p-4" style={{ printColorAdjust: 'exact' }}>
         <div className="flex flex-col gap-1 min-w-[160px]">
           <label className="text-xs font-medium text-neutral" htmlFor="rp-group">그룹</label>
           <select
@@ -86,6 +128,11 @@ export default function ReportsPage() {
             onChange={(e) => setDateTo(e.target.value)}
           />
         </div>
+        {!isLoading && categoryData.length > 0 && (
+          <Button variant="outlined" size="sm" onClick={() => void handleExportPdf()} loading={isExportingPdf}>
+            PDF 내보내기
+          </Button>
+        )}
       </div>
 
       {!groupId ? (
@@ -99,17 +146,25 @@ export default function ReportsPage() {
       ) : categoryData.length === 0 && memberData.length === 0 ? (
         <EmptyState title="해당 기간에 지출 데이터가 없습니다" />
       ) : (
-        <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-          {categoryData.length > 0 && (
-            <div className="bg-white border border-border rounded p-6">
-              <CategoryPieChart data={categoryData} />
-            </div>
-          )}
-          {memberData.length > 0 && (
-            <div className="bg-white border border-border rounded p-6">
-              <MemberPieChart data={memberData} />
-            </div>
-          )}
+        <div ref={reportRef} className="flex flex-col gap-4 bg-[#f8f9fa] rounded p-4">
+          <div className="text-center py-2">
+            <p className="text-lg font-semibold text-[#202124] m-0">
+              {groups.find((g) => g.id === groupId)?.name} 지출 리포트
+            </p>
+            <p className="text-sm text-neutral m-0 mt-1">기간: {dateFrom} ~ {dateTo}</p>
+          </div>
+          <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+            {categoryData.length > 0 && (
+              <div className="bg-white border border-border rounded p-6">
+                <CategoryPieChart data={categoryData} />
+              </div>
+            )}
+            {memberData.length > 0 && (
+              <div className="bg-white border border-border rounded p-6">
+                <MemberPieChart data={memberData} />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

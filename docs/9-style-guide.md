@@ -598,39 +598,50 @@ Wide     : > 1440px → 콘텐츠 max-width 1200px 제한
 
 ---
 
-## 10. CSS 변수 정의
+## 10. Tailwind CSS 설정
 
-`src/index.css` 또는 `src/styles/variables.css`에 정의하여 전체에서 참조한다.
+프론트엔드는 **Tailwind CSS v3**을 사용하며, 다음과 같이 구성된다.
+
+### 10.1 tailwind.config.js 설정
+
+```javascript
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: '#1a73e8',
+          light: '#e8f0fe',
+          dark: '#1557b0',
+        },
+        danger: { DEFAULT: '#d93025', light: '#fce8e6' },
+        success: { DEFAULT: '#1e8e3e', light: '#e6f4ea' },
+        neutral: '#5f6368',
+        border: '#dadce0',
+        surface: '#ffffff',
+      },
+      fontFamily: {
+        sans: ['Pretendard', 'sans-serif'],
+      },
+      borderRadius: {
+        sm: '6px',
+        DEFAULT: '8px',
+        pill: '9999px',
+      },
+    },
+  },
+  plugins: [],
+}
+```
+
+### 10.2 CSS 변수 (선택사항: 추가 커스터마이징 시)
+
+`src/index.css` 또는 `src/styles/variables.css`에 추가 정의 가능.
 
 ```css
 :root {
-  /* Colors */
-  --color-primary:         #1a73e8;
-  --color-primary-dark:    #1557b0;
-  --color-primary-light:   #e8f0fe;
-  --color-success:         #1e8e3e;
-  --color-success-light:   #e6f4ea;
-  --color-warning:         #f9ab00;
-  --color-warning-light:   #fef7e0;
-  --color-danger:          #d93025;
-  --color-danger-light:    #fce8e6;
-
-  --color-text-primary:    #202124;
-  --color-text-secondary:  #5f6368;
-  --color-text-disabled:   #bdc1c6;
-  --color-text-placeholder:#9aa0a6;
-
-  --color-border:          #dadce0;
-  --color-border-light:    #f1f3f4;
-  --color-bg:              #f8f9fa;
-  --color-surface:         #ffffff;
-
-  /* Typography */
-  --font-family:           'Pretendard', 'Roboto', sans-serif;
-  --font-size-base:        14px;
-  --line-height-base:      1.5;
-
-  /* Spacing */
+  /* Spacing — 8px 베이스 그리드 */
   --space-1:   4px;
   --space-2:   8px;
   --space-3:  12px;
@@ -639,17 +650,6 @@ Wide     : > 1440px → 콘텐츠 max-width 1200px 제한
   --space-6:  24px;
   --space-8:  32px;
   --space-12: 48px;
-
-  /* Border Radius */
-  --radius-sm:   4px;
-  --radius-md:   8px;
-  --radius-lg:  12px;
-  --radius-pill: 9999px;
-
-  /* Shadow */
-  --shadow-sm: 0 1px 2px rgba(60,64,67,.1);
-  --shadow-md: 0 2px 6px rgba(60,64,67,.15);
-  --shadow-lg: 0 8px 24px rgba(60,64,67,.3);
 
   /* Layout */
   --header-height:      64px;
@@ -670,10 +670,28 @@ Wide     : > 1440px → 콘텐츠 max-width 1200px 제한
 }
 ```
 
+### 10.3 Tailwind 클래스 사용 예
+
+```html
+<!-- Primary Button -->
+<button class="bg-primary text-white px-6 py-2 rounded hover:bg-primary-dark transition-colors">
+  정산 실행
+</button>
+
+<!-- Neutral Text -->
+<span class="text-neutral text-sm">보조 정보</span>
+
+<!-- Border -->
+<div class="border border-border rounded-md p-4">
+  카드 콘텐츠
+</div>
+```
+
 ---
 
 ## 변경 이력
 
 | 버전 | 일자 | 변경 내용 | 작성자 |
 |------|------|----------|--------|
+| 1.1 | 2026-06-19 | 섹션 10 업데이트: CSS 변수 정의 → Tailwind CSS v3 설정. tailwind.config.js 실제 설정값 반영 (colors extend, borderRadius 추가). 10.2 CSS 변수 섹션은 선택사항으로 변경. 10.3 Tailwind 클래스 사용 예 추가 | stepanowon |
 | 1.0 | 2026-06-18 | 최초 작성 — Google Calendar 디자인 기반 스타일 가이드 | stepanowon |

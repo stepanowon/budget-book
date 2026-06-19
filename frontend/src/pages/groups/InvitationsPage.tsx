@@ -60,9 +60,8 @@ export default function InvitationsPage() {
                   <p className="text-[15px] font-medium text-[#202124] m-0 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
                     {inv.group_name}
                   </p>
-                  <p className="text-xs text-neutral m-0">
-                    초대자: {inv.inviter_username} &middot; 만료: {inv.expires_at.slice(0, 10)}
-                  </p>
+                  <p className="text-xs text-neutral m-0">초대자: {inv.inviter_username}</p>
+                  <p className="text-xs text-neutral m-0 mt-0.5">만료: {inv.expires_at.slice(0, 10)}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {expired ? (

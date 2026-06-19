@@ -58,6 +58,17 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
   }
 }
 
+export async function changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { current_password, new_password } = req.body as { current_password: string; new_password: string };
+    await authService.changePassword(userId, current_password, new_password);
+    res.status(HTTP_STATUS.OK).json({ success: true, data: { message: '비밀번호가 변경되었습니다.' } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function withdraw(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.id;

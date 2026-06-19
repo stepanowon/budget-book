@@ -15,7 +15,7 @@ import Modal from '@/components/common/Modal';
 import * as reportApi from '@/api/reportApi';
 
 const filterInputClass =
-  'px-2.5 py-1.5 border border-border rounded text-sm font-sans min-h-[44px] text-[#202124] bg-white outline-none focus:border-primary';
+  'w-full px-2 py-1.5 border border-border rounded text-xs md:text-sm font-sans h-9 text-[#202124] bg-white outline-none focus:border-primary';
 
 export default function ExpenseListPage() {
   const { groupId = '' } = useParams<{ groupId: string }>();
@@ -23,8 +23,12 @@ export default function ExpenseListPage() {
   const { currentUser } = useAuth();
   const { showToast } = useToast();
 
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const plus30Str = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const [dateFrom, setDateFrom] = useState(todayStr);
+  const [dateTo, setDateTo] = useState(plus30Str);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -118,9 +122,9 @@ export default function ExpenseListPage() {
           </div>
         </div>
 
-        <div className="flex gap-3 flex-wrap items-end bg-white border border-border rounded p-4">
-          <div className="flex flex-col gap-1 min-w-[140px]">
-            <label className="text-xs text-neutral font-medium" htmlFor="date-from">시작일</label>
+        <div className="grid grid-cols-3 gap-2 bg-white border border-border rounded p-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] md:text-xs text-neutral font-medium" htmlFor="date-from">시작일</label>
             <input
               id="date-from"
               className={filterInputClass}
@@ -129,8 +133,8 @@ export default function ExpenseListPage() {
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-1 min-w-[140px]">
-            <label className="text-xs text-neutral font-medium" htmlFor="date-to">종료일</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] md:text-xs text-neutral font-medium" htmlFor="date-to">종료일</label>
             <input
               id="date-to"
               className={filterInputClass}
@@ -139,8 +143,8 @@ export default function ExpenseListPage() {
               onChange={(e) => setDateTo(e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-1 min-w-[140px]">
-            <label className="text-xs text-neutral font-medium" htmlFor="category-filter">카테고리</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] md:text-xs text-neutral font-medium" htmlFor="category-filter">카테고리</label>
             <select
               id="category-filter"
               className={filterInputClass}
@@ -180,6 +184,7 @@ export default function ExpenseListPage() {
                 currentUserRole={currentRole}
                 categories={categories}
                 paidByUsername={getMemberUsername(expense.paid_by)}
+                participantNames={expense.splits.map((s) => getMemberUsername(s.user_id))}
                 onEdit={handleEdit}
                 onDelete={(id) => setDeleteTargetId(id)}
               />

@@ -14,7 +14,7 @@ export function toApiDateString(date: Date): string {
  * 'YYYY-MM-DD' 문자열을 'YYYY년 MM월 DD일' 형식으로 변환한다.
  */
 export function formatDisplayDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-');
+  const [year, month, day] = dateStr.slice(0, 10).split('-');
   return `${year}년 ${month}월 ${day}일`;
 }
 

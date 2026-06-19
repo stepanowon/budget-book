@@ -20,7 +20,7 @@
   ],
   "tags": [
     { "name": "Health",      "description": "서버 상태 확인" },
-    { "name": "Auth",        "description": "인증 — 회원가입, 로그인, 토큰 갱신, 로그아웃, 탈퇴" },
+    { "name": "Auth",        "description": "인증 — 회원가입, 로그인, 토큰 갱신, 로그아웃, 비밀번호 변경, 탈퇴" },
     { "name": "Groups",      "description": "그룹 CRUD" },
     { "name": "Members",     "description": "그룹 멤버 조회 및 제거" },
     { "name": "Invitations", "description": "초대 발송 및 수락/거절" },
@@ -210,6 +210,39 @@
       }
     },
 
+    "/auth/password": {
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "비밀번호 변경",
+        "description": "현재 비밀번호를 확인한 후 새 비밀번호로 변경한다. 새 비밀번호는 8자 이상, 영문·숫자·특수문자를 각 1자 이상 포함해야 한다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChangePasswordRequest" },
+              "example": {
+                "current_password": "OldP@ss1",
+                "new_password": "NewP@ss2!"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "비밀번호 변경 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MessageResponse" },
+                "example": { "success": true, "data": { "message": "비밀번호가 변경되었습니다." } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "422": { "$ref": "#/components/responses/ValidationFailed" }
+        }
+      }
+    },
+
     "/auth/withdraw": {
       "delete": {
         "tags": ["Auth"],
@@ -391,6 +424,39 @@
       }
     },
 
+    "/groups/{groupId}/members": {
+      "parameters": [
+        { "$ref": "#/components/parameters/groupId" }
+      ],
+      "get": {
+        "tags": ["Members"],
+        "summary": "그룹 멤버 목록 조회",
+        "description": "그룹에 소속된 모든 멤버 목록을 반환한다. 그룹 멤버면 누구나 조회 가능하다.",
+        "responses": {
+          "200": {
+            "description": "멤버 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/GroupMember" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+
     "/groups/{groupId}/members/{userId}": {
       "parameters": [
         { "$ref": "#/components/parameters/groupId" },
@@ -485,7 +551,35 @@
       }
     },
 
-    "/invitations/{invitationId}/respond": {
+    "/invitations/my": {
+      "get": {
+        "tags": ["Invitations"],
+        "summary": "내 수신 초대 목록 조회",
+        "description": "로그인 사용자가 수신한 초대 목록을 반환한다. PENDING 상태 포함 모든 초대가 조회된다.",
+        "responses": {
+          "200": {
+            "description": "내 수신 초대 목록",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/InvitationSent" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+
+    "/invitations/{invitationId}": {
       "parameters": [
         { "$ref": "#/components/parameters/invitationId" }
       ],
@@ -1074,19 +1168,19 @@
       "get": {
         "tags": ["Reports"],
         "summary": "지출 내역 엑셀 내보내기",
-        "description": "지출 내역을 `.xlsx` 파일로 내보낸다. 날짜, 카테고리, 금액, 결제자, 분담 정보 컬럼 포함.",
+        "description": "지출 내역을 `.xlsx` 파일로 내보낸다. 날짜·카테고리·금액·결제자·설명 컬럼과 참여 멤버별 분담금 동적 컬럼이 포함되며, 마지막 행에 합계가 추가된다. `period_start`/`period_end` 또는 `date_from`/`date_to` 파라미터명을 모두 지원한다.",
         "parameters": [
           {
             "in": "query",
             "name": "period_start",
             "schema": { "type": "string", "format": "date" },
-            "description": "조회 시작일 (선택)"
+            "description": "조회 시작일 (선택, YYYY-MM-DD). `date_from`도 동일하게 수용"
           },
           {
             "in": "query",
             "name": "period_end",
             "schema": { "type": "string", "format": "date" },
-            "description": "조회 종료일 (선택)"
+            "description": "조회 종료일 (선택, YYYY-MM-DD). `date_to`도 동일하게 수용"
           }
         ],
         "responses": {
@@ -1293,6 +1387,24 @@
             "properties": {
               "message": { "type": "string", "example": "처리가 완료되었습니다." }
             }
+          }
+        }
+      },
+
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": ["current_password", "new_password"],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "description": "현재 비밀번호",
+            "example": "OldP@ss1"
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 8,
+            "description": "새 비밀번호 (8자 이상, 영문·숫자·특수문자 각 1자 이상 포함)",
+            "example": "NewP@ss2!"
           }
         }
       },
@@ -1591,7 +1703,7 @@
           "period_start": { "type": "string", "format": "date", "example": "2026-07-01" },
           "period_end":   { "type": "string", "format": "date", "example": "2026-07-05" },
           "created_by":   { "type": "string", "format": "uuid" },
-          "created_at":   { "type": "string", "format": "date-time" }
+          "settled_at":   { "type": "string", "format": "date-time", "description": "정산 실행 일시 (UTC)" }
         }
       },
 
@@ -1664,7 +1776,8 @@
         "properties": {
           "user_id":     { "type": "string", "format": "uuid" },
           "username":    { "type": "string", "example": "hong_gildong" },
-          "total_share": { "type": "integer", "description": "해당 멤버 분담 합계", "example": 260000 }
+          "total_share": { "type": "integer", "description": "해당 멤버 분담 합계 (기간 내 expense_splits.amount 합)", "example": 260000 },
+          "total_paid":  { "type": "integer", "description": "해당 멤버 결제 합계 (기간 내 paid_by 기준, 결제 없으면 0)", "example": 450000 }
         }
       },
 

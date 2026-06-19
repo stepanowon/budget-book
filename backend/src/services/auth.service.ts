@@ -123,6 +123,22 @@ export async function logout(refreshToken: string): Promise<void> {
   console.info('[AUTH] User logged out');
 }
 
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await userRepo.findUserById(userId);
+  if (!user) throw new UnauthorizedError('사용자를 찾을 수 없습니다.');
+
+  const isValid = await comparePassword(currentPassword, user.password_hash);
+  if (!isValid) throw new UnauthorizedError('현재 비밀번호가 올바르지 않습니다.');
+
+  const newHash = await hashPassword(newPassword);
+  await userRepo.updatePasswordHash(userId, newHash);
+  console.info('[AUTH] Password changed', { userId });
+}
+
 export async function withdraw(userId: string, refreshToken: string): Promise<void> {
   // 모든 소속 그룹에서 MANAGER 이양 처리 (DB 함수 호출)
   const memberships = await sql`SELECT group_id FROM group_members WHERE user_id = ${userId}`;

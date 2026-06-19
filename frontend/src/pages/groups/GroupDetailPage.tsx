@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useMatch, Outlet } from 'react-router-dom';
 import axios from 'axios';
 import {
   useGroup,
@@ -15,8 +15,6 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import Modal from '@/components/common/Modal';
 import type { UpdateGroupRequest } from '@/types/api';
-
-type ActiveTab = 'info' | 'expenses' | 'settlement';
 
 const btnPrimary =
   'inline-flex items-center justify-center px-5 py-2 bg-primary text-white border-0 rounded text-sm font-medium font-sans cursor-pointer min-h-[44px] hover:bg-primary-dark transition-colors disabled:bg-border disabled:text-[#bdc1c6] disabled:cursor-not-allowed';
@@ -37,15 +35,17 @@ export default function GroupDetailPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('info');
+  // URL로 활성 탭 결정 (훅은 항상 무조건 호출)
+  const matchExpensesExact = useMatch('/groups/:groupId/expenses');
+  const matchExpensesDeep = useMatch('/groups/:groupId/expenses/*');
+  const matchSettlement = useMatch('/groups/:groupId/settlements');
+  const activeTab = (matchExpensesExact || matchExpensesDeep) ? 'expenses' : matchSettlement ? 'settlement' : 'info';
+
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
-
   const [editForm, setEditForm] = useState<UpdateGroupRequest>({});
   const [editError, setEditError] = useState('');
-
-  // 초대 발송 상태
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
   const [inviteMessageType, setInviteMessageType] = useState<'success' | 'error'>('success');
@@ -61,34 +61,19 @@ export default function GroupDetailPage() {
 
   const handleOpenEdit = () => {
     if (!group) return;
-    setEditForm({
-      name: group.name,
-      start_date: group.start_date,
-      end_date: group.end_date ?? undefined,
-    });
+    setEditForm({ name: group.name, start_date: group.start_date, end_date: group.end_date ?? undefined });
     setEditError('');
     setIsEditOpen(true);
   };
 
   const handleUpdateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editForm.name?.trim()) {
-      setEditError('그룹명을 입력해주세요.');
-      return;
-    }
-    updateGroup(editForm, {
-      onSuccess: () => {
-        setIsEditOpen(false);
-      },
-    });
+    if (!editForm.name?.trim()) { setEditError('그룹명을 입력해주세요.'); return; }
+    updateGroup(editForm, { onSuccess: () => setIsEditOpen(false) });
   };
 
   const handleDeactivate = () => {
-    deactivateGroup(id, {
-      onSuccess: () => {
-        navigate(ROUTES.GROUPS);
-      },
-    });
+    deactivateGroup(id, { onSuccess: () => navigate(ROUTES.GROUPS) });
   };
 
   const handleSendInvite = (e: React.FormEvent) => {
@@ -102,13 +87,9 @@ export default function GroupDetailPage() {
       },
       onError: (error: unknown) => {
         if (axios.isAxiosError(error)) {
-          if (error.response?.status === 409) {
-            setInviteMessage('이미 초대된 사용자입니다');
-          } else if (error.response?.status === 404) {
-            setInviteMessage('해당 username의 사용자를 찾을 수 없습니다');
-          } else {
-            setInviteMessage('초대 발송에 실패했습니다');
-          }
+          if (error.response?.status === 409) setInviteMessage('이미 초대된 사용자입니다');
+          else if (error.response?.status === 404) setInviteMessage('해당 username의 사용자를 찾을 수 없습니다');
+          else setInviteMessage('초대 발송에 실패했습니다');
         } else {
           setInviteMessage('초대 발송에 실패했습니다');
         }
@@ -118,19 +99,11 @@ export default function GroupDetailPage() {
   };
 
   const handleRemoveMember = (userId: string) => {
-    removeMember(userId, {
-      onSuccess: () => {
-        setRemovingMemberId(null);
-      },
-    });
+    removeMember(userId, { onSuccess: () => setRemovingMemberId(null) });
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center p-12">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <div className="flex justify-center p-12"><LoadingSpinner size="lg" /></div>;
   }
 
   if (isError || !group) {
@@ -138,13 +111,18 @@ export default function GroupDetailPage() {
   }
 
   const isManager = group.my_role === 'MANAGER';
-
+  const fmtDate = (d: string) => d.slice(0, 10);
   const periodText =
     group.type === 'LIMITED'
-      ? `${group.start_date} ~ ${group.end_date ?? ''}`
+      ? `${fmtDate(group.start_date)} ~ ${group.end_date ? fmtDate(group.end_date) : ''}`
       : '상시';
-
   const removingMember = members?.find((m) => m.user_id === removingMemberId);
+
+  const TAB_ITEMS = [
+    { key: 'info', label: '정보', to: ROUTES.GROUP_DETAIL(id) },
+    { key: 'expenses', label: '지출', to: ROUTES.GROUP_EXPENSES(id) },
+    { key: 'settlement', label: '정산', to: ROUTES.GROUP_SETTLEMENTS(id) },
+  ] as const;
 
   return (
     <>
@@ -153,76 +131,65 @@ export default function GroupDetailPage() {
           <h1 className="text-[22px] font-medium text-[#202124] m-0">{group.name}</h1>
           {isManager && (
             <div className="flex gap-2 flex-shrink-0">
-              <button className={btnOutlined} onClick={handleOpenEdit}>
-                그룹 수정
-              </button>
-              <button className={btnDanger} onClick={() => setIsDeactivateOpen(true)}>
-                그룹 비활성화
-              </button>
+              <button className={btnOutlined} onClick={handleOpenEdit}>그룹 수정</button>
+              <button className={btnDanger} onClick={() => setIsDeactivateOpen(true)}>그룹 비활성화</button>
             </div>
           )}
         </div>
 
         {/* 탭 바 */}
-        <div className="flex border-b border-border mb-6">
-          {(['info', 'expenses', 'settlement'] as const).map((tab) => {
-            const labels = { info: '정보', expenses: '지출', settlement: '정산' };
-            return (
-              <button
-                key={tab}
-                className={`px-5 py-2.5 bg-transparent border-0 border-b-2 text-sm font-medium font-sans cursor-pointer min-h-[44px] transition-colors ${
-                  activeTab === tab
-                    ? 'text-primary border-b-primary'
-                    : 'text-neutral border-b-transparent hover:text-primary hover:bg-primary-light'
-                }`}
-                onClick={() => {
-                  if (tab === 'expenses') navigate(ROUTES.GROUP_EXPENSES(group.id));
-                  else if (tab === 'settlement') navigate(ROUTES.GROUP_SETTLEMENTS(group.id));
-                  else setActiveTab(tab);
-                }}
-              >
-                {labels[tab]}
-              </button>
-            );
-          })}
+        <div className="flex gap-1 bg-[#f1f3f4] p-1 rounded-lg mb-6">
+          {TAB_ITEMS.map(({ key, label, to }) => (
+            <button
+              key={key}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium font-sans cursor-pointer border-0 transition-all duration-150 ${
+                activeTab === key
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'bg-transparent text-neutral hover:text-[#202124]'
+              }`}
+              onClick={() => navigate(to)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {activeTab === 'info' && (
+        {/* 지출/정산/카테고리 탭: 자식 라우트 렌더링 */}
+        {activeTab !== 'info' ? (
+          <Outlet context={{ isManager }} />
+        ) : (
           <>
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {[
-                { label: '그룹명', value: group.name },
-                { label: '유형', value: group.type === 'LIMITED' ? '기간제' : '상시' },
-                { label: '기간', value: periodText },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-xs font-medium text-neutral m-0 mb-1">{label}</p>
-                  <p className="text-sm text-[#202124] m-0">{value}</p>
+            {/* 그룹 정보 카드 */}
+            <div className="bg-white border border-border rounded-lg p-4 mb-6 shadow-sm">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <div>
+                  <p className="text-[11px] font-medium text-neutral m-0 mb-0.5 uppercase tracking-wide">그룹명</p>
+                  <p className="text-sm font-medium text-[#202124] m-0">{group.name}</p>
                 </div>
-              ))}
-              <div>
-                <p className="text-xs font-medium text-neutral m-0 mb-1">상태</p>
-                <span
-                  className={`${badgeBase} ${
-                    group.status === 'ACTIVE' ? 'bg-success-light text-success' : 'bg-border text-neutral'
-                  }`}
-                >
-                  {group.status === 'ACTIVE' ? '활성' : '비활성'}
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-neutral m-0 mb-1">내 역할</p>
-                <span
-                  className={`${badgeBase} ${
-                    group.my_role === 'MANAGER' ? 'bg-primary text-white' : 'bg-border text-[#202124]'
-                  }`}
-                >
-                  {group.my_role === 'MANAGER' ? '관리자' : '멤버'}
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-neutral m-0 mb-1">멤버 수</p>
-                <p className="text-sm text-[#202124] m-0">{group.member_count}명</p>
+                <div>
+                  <p className="text-[11px] font-medium text-neutral m-0 mb-0.5 uppercase tracking-wide">유형</p>
+                  <p className="text-sm font-medium text-[#202124] m-0">{group.type === 'LIMITED' ? '기간제' : '상시'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-neutral m-0 mb-0.5 uppercase tracking-wide">기간</p>
+                  <p className="text-sm font-medium text-[#202124] m-0">{periodText}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-neutral m-0 mb-0.5 uppercase tracking-wide">상태</p>
+                  <span className={`${badgeBase} ${group.status === 'ACTIVE' ? 'bg-success-light text-success' : 'bg-border text-neutral'}`}>
+                    {group.status === 'ACTIVE' ? '활성' : '비활성'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-neutral m-0 mb-0.5 uppercase tracking-wide">내 역할</p>
+                  <span className={`${badgeBase} ${group.my_role === 'MANAGER' ? 'bg-primary text-white' : 'bg-border text-[#202124]'}`}>
+                    {group.my_role === 'MANAGER' ? '관리자' : '멤버'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-neutral m-0 mb-0.5 uppercase tracking-wide">멤버 수</p>
+                  <p className="text-sm font-medium text-[#202124] m-0">{group.member_count}명</p>
+                </div>
               </div>
             </div>
 
@@ -234,34 +201,20 @@ export default function GroupDetailPage() {
                   return (
                     <div key={member.id} className="flex items-center justify-between px-4 py-3 bg-white border border-border rounded">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-full bg-primary text-white text-[13px] font-medium flex items-center justify-center flex-shrink-0"
-                          aria-hidden="true"
-                        >
+                        <div className="w-8 h-8 rounded-full bg-primary text-white text-[13px] font-medium flex items-center justify-center flex-shrink-0" aria-hidden="true">
                           {member.username.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-sm text-[#202124]">{member.username}</span>
-                          <span className="text-[11px] text-neutral">
-                            {member.joined_at.slice(0, 10)} 가입
-                          </span>
+                          <span className="text-[11px] text-neutral">{member.joined_at.slice(0, 10)} 가입</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span
-                          className={`${badgeBase} ${
-                            member.role === 'MANAGER' ? 'bg-primary text-white' : 'bg-border text-[#202124]'
-                          }`}
-                        >
+                        <span className={`${badgeBase} ${member.role === 'MANAGER' ? 'bg-primary text-white' : 'bg-border text-[#202124]'}`}>
                           {member.role === 'MANAGER' ? '관리자' : '멤버'}
                         </span>
                         {isManager && !isSelf && (
-                          <button
-                            className={btnDangerSm}
-                            onClick={() => setRemovingMemberId(member.user_id)}
-                          >
-                            제거
-                          </button>
+                          <button className={btnDangerSm} onClick={() => setRemovingMemberId(member.user_id)}>제거</button>
                         )}
                       </div>
                     </div>
@@ -272,7 +225,6 @@ export default function GroupDetailPage() {
               )}
             </div>
 
-            {/* 초대 발송 */}
             {isManager && (
               <div className="mt-6 p-4 bg-white border border-border rounded">
                 <p className="text-[15px] font-medium text-[#202124] m-0 mb-3">멤버 초대</p>
@@ -283,18 +235,11 @@ export default function GroupDetailPage() {
                       type="text"
                       placeholder="초대할 username 입력"
                       value={inviteUsername}
-                      onChange={(e) => {
-                        setInviteUsername(e.target.value);
-                        setInviteMessage('');
-                      }}
+                      onChange={(e) => { setInviteUsername(e.target.value); setInviteMessage(''); }}
                       aria-label="초대할 username"
                     />
                   </div>
-                  <button
-                    className={btnPrimary}
-                    type="submit"
-                    disabled={isSendingInvite || !inviteUsername.trim()}
-                  >
+                  <button className={btnPrimary} type="submit" disabled={isSendingInvite || !inviteUsername.trim()}>
                     {isSendingInvite ? '전송 중...' : '초대 보내기'}
                   </button>
                 </form>
@@ -310,20 +255,11 @@ export default function GroupDetailPage() {
       </div>
 
       {/* 그룹 수정 모달 */}
-      <Modal
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        title="그룹 수정"
+      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="그룹 수정"
         footer={
           <div className="flex justify-end gap-2">
-            <button className={btnOutlined} onClick={() => setIsEditOpen(false)}>
-              취소
-            </button>
-            <button
-              className={btnPrimary}
-              onClick={handleUpdateSubmit}
-              disabled={isUpdating}
-            >
+            <button className={btnOutlined} onClick={() => setIsEditOpen(false)}>취소</button>
+            <button className={btnPrimary} onClick={handleUpdateSubmit} disabled={isUpdating}>
               {isUpdating ? '저장 중...' : '저장'}
             </button>
           </div>
@@ -331,68 +267,32 @@ export default function GroupDetailPage() {
       >
         <form onSubmit={handleUpdateSubmit} noValidate>
           <div className="mb-4">
-            <label className="block text-xs font-medium text-neutral mb-1" htmlFor="edit-group-name">
-              그룹명
-            </label>
-            <input
-              id="edit-group-name"
-              className={formInput}
-              type="text"
-              value={editForm.name ?? ''}
-              onChange={(e) =>
-                setEditForm((prev) => ({ ...prev, name: e.target.value }))
-              }
-            />
+            <label className="block text-xs font-medium text-neutral mb-1" htmlFor="edit-group-name">그룹명</label>
+            <input id="edit-group-name" className={formInput} type="text" value={editForm.name ?? ''}
+              onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
             {editError && <p className="text-xs text-danger mt-1">{editError}</p>}
           </div>
           <div className="mb-4">
-            <label className="block text-xs font-medium text-neutral mb-1" htmlFor="edit-start-date">
-              시작일
-            </label>
-            <input
-              id="edit-start-date"
-              className={formInput}
-              type="date"
-              value={editForm.start_date ?? ''}
-              onChange={(e) =>
-                setEditForm((prev) => ({ ...prev, start_date: e.target.value }))
-              }
-            />
+            <label className="block text-xs font-medium text-neutral mb-1" htmlFor="edit-start-date">시작일</label>
+            <input id="edit-start-date" className={formInput} type="date" value={editForm.start_date ?? ''}
+              onChange={(e) => setEditForm((p) => ({ ...p, start_date: e.target.value }))} />
           </div>
           {group.type === 'LIMITED' && (
             <div className="mb-4">
-              <label className="block text-xs font-medium text-neutral mb-1" htmlFor="edit-end-date">
-                종료일
-              </label>
-              <input
-                id="edit-end-date"
-                className={formInput}
-                type="date"
-                value={editForm.end_date ?? ''}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, end_date: e.target.value }))
-                }
-              />
+              <label className="block text-xs font-medium text-neutral mb-1" htmlFor="edit-end-date">종료일</label>
+              <input id="edit-end-date" className={formInput} type="date" value={editForm.end_date ?? ''}
+                onChange={(e) => setEditForm((p) => ({ ...p, end_date: e.target.value }))} />
             </div>
           )}
         </form>
       </Modal>
 
       {/* 비활성화 확인 모달 */}
-      <Modal
-        isOpen={isDeactivateOpen}
-        onClose={() => setIsDeactivateOpen(false)}
-        title="그룹 비활성화"
+      <Modal isOpen={isDeactivateOpen} onClose={() => setIsDeactivateOpen(false)} title="그룹 비활성화"
         footer={
           <div className="flex justify-end gap-2">
-            <button className={btnOutlined} onClick={() => setIsDeactivateOpen(false)}>
-              취소
-            </button>
-            <button
-              className={btnDangerFilled}
-              onClick={handleDeactivate}
-              disabled={isDeactivating}
-            >
+            <button className={btnOutlined} onClick={() => setIsDeactivateOpen(false)}>취소</button>
+            <button className={btnDangerFilled} onClick={handleDeactivate} disabled={isDeactivating}>
               {isDeactivating ? '처리 중...' : '비활성화'}
             </button>
           </div>
@@ -405,22 +305,11 @@ export default function GroupDetailPage() {
       </Modal>
 
       {/* 멤버 제거 확인 모달 */}
-      <Modal
-        isOpen={removingMemberId !== null}
-        onClose={() => setRemovingMemberId(null)}
-        title="멤버 제거"
+      <Modal isOpen={removingMemberId !== null} onClose={() => setRemovingMemberId(null)} title="멤버 제거"
         footer={
           <div className="flex justify-end gap-2">
-            <button className={btnOutlined} onClick={() => setRemovingMemberId(null)}>
-              취소
-            </button>
-            <button
-              className={btnDangerFilled}
-              onClick={() => {
-                if (removingMemberId) handleRemoveMember(removingMemberId);
-              }}
-              disabled={isRemoving}
-            >
+            <button className={btnOutlined} onClick={() => setRemovingMemberId(null)}>취소</button>
+            <button className={btnDangerFilled} onClick={() => { if (removingMemberId) handleRemoveMember(removingMemberId); }} disabled={isRemoving}>
               {isRemoving ? '처리 중...' : '제거'}
             </button>
           </div>

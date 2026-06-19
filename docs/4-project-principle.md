@@ -347,6 +347,7 @@ const role: Role = memberData.role;
 | GET | `/api/v1/groups/:groupId/settlements` | 정산 목록 |
 | GET | `/api/v1/groups/:groupId/reports/expenses/export` | 지출 내역 엑셀 내보내기 |
 | GET | `/api/v1/groups/:groupId/reports/settlements/:settlementId/export` | 정산 금액 엑셀 내보내기 |
+| PATCH | `/api/v1/auth/password` | 비밀번호 변경 |
 | POST | `/api/v1/groups/:groupId/invitations` | 멤버 초대 |
 | PATCH | `/api/v1/invitations/:invitationId` | 초대 응답 (수락/거절) |
 | GET | `/api/v1/messages` | 내 메시지 목록 |
@@ -395,9 +396,7 @@ CREATE TABLE group_members (
 
 ```
 // .env 환경변수 네이밍
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+DATABASE_URL=
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
 JWT_ACCESS_TTL_SECONDS=3600
@@ -405,6 +404,7 @@ JWT_REFRESH_TTL_SECONDS=2592000
 BCRYPT_COST=12
 PORT=3000
 NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
 
 // src/constants/expense.ts
 export const AMOUNT_MIN = 1;
@@ -537,7 +537,7 @@ Pull Request 생성 및 커밋 푸시 시 다음 항목이 자동 실행된다. 
 
 ```typescript
 // src/config/env.ts — 시작 시 필수값 검증
-const required = ['SUPABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
+const required = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
 required.forEach((key) => {
   if (!process.env[key]) throw new Error(`Missing required env: ${key}`);
 });
@@ -927,4 +927,5 @@ export async function findExpensesByGroup(groupId: string) {
 | 버전 | 일자 | 변경 내용 | 작성자 |
 |------|------|----------|--------|
 | 1.0 | 2026-06-18 | 최초 작성 | stepanowon |
-| 1.1 | 2026-06-18 | (1) 백엔드 라이브러리 초기화 위치: `src/lib/supabase.ts` → `src/lib/db.ts` (postgres.js 기반 DB 연결 풀, max 10). (2) API 엔드포인트 명세에 엑셀 내보내기 추가: `GET /groups/:groupId/reports/expenses/export`, `GET /groups/:groupId/reports/settlements/:settlementId/export`. (3) Swagger UI 엔드포인트 추가: `GET /api-docs` (섹션 5.6). | stepanowon |
+| 1.1 | 2026-06-18 | (1) 백엔드 라이브러리 초기화 위치: `src/lib/supabase.ts` → `src/lib/db.ts` (postgres.js 기반 DB 연결 풀, max 10). (2) API 엔드포인트 명세에 엑셀 내보내기 추가. (3) Swagger UI 엔드포인트 추가 (섹션 5.6). | stepanowon |
+| 1.2 | 2026-06-19 | (1) 섹션 3.4 API 엔드포인트에 `PATCH /auth/password` 추가. (2) 섹션 3.6·5.1 환경변수 예시를 실제 구현(`DATABASE_URL`, `CORS_ORIGIN`)에 맞게 수정 (Supabase SDK 환경변수 제거). | stepanowon |

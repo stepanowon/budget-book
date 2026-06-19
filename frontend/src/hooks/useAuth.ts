@@ -4,12 +4,12 @@ import {
   useState,
   useCallback,
   type ReactNode,
+  createElement,
 } from 'react';
 import axios from 'axios';
 import * as authApi from '@/api/authApi';
-import { setAccessToken } from '@/lib/tokenStore';
+import { getAccessToken, setAccessToken } from '@/lib/tokenStore';
 
-// ─── AppError ────────────────────────────────────────────────────
 export interface AppError {
   code: string;
   message: string;
@@ -34,7 +34,6 @@ function toAppError(error: unknown): AppError {
   return { code: 'UNKNOWN', message: '알 수 없는 오류가 발생했습니다', status: 0 };
 }
 
-// ─── Context 타입 ────────────────────────────────────────────────
 export interface CurrentUser {
   id: string;
   email: string;
@@ -50,43 +49,47 @@ export interface AuthContextValue {
   withdraw: () => Promise<void>;
 }
 
-// ─── Context 생성 ────────────────────────────────────────────────
-import { createElement } from 'react';
-
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ─── Provider ────────────────────────────────────────────────────
+function parseTokenToUser(token: string | null): CurrentUser | null {
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])) as {
+      id?: string;
+      username?: string;
+      exp?: number;
+    };
+    if (!payload.id || !payload.username) return null;
+    // 만료된 토큰이면 null 반환
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      setAccessToken(null);
+      return null;
+    }
+    return { id: payload.id, email: '', username: payload.username };
+  } catch {
+    return null;
+  }
+}
+
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  // localStorage에 저장된 토큰으로 초기 상태를 동기적으로 복원
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() =>
+    parseTokenToUser(getAccessToken()),
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const response = await authApi.login({ email, password });
-      const accessToken = response.data.accessToken;
-      setAccessToken(accessToken);
-
-      // 토큰 페이로드에서 사용자 정보 파싱 (JWT payload는 base64url)
-      try {
-        const payload = JSON.parse(atob(accessToken.split('.')[1])) as {
-          sub: string;
-          email: string;
-          username: string;
-        };
-        setCurrentUser({
-          id: payload.sub,
-          email: payload.email,
-          username: payload.username,
-        });
-      } catch {
-        // 페이로드 파싱 실패 시 최소 정보만
-        setCurrentUser({ id: '', email, username: '' });
-      }
+      const token = response.data.accessToken;
+      setAccessToken(token);
+      const user = parseTokenToUser(token);
+      setCurrentUser(user ?? { id: '', email, username: '' });
     } catch (error) {
       throw toAppError(error);
     } finally {
@@ -99,7 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await authApi.logout();
     } catch {
-      // 서버 오류 무시하고 로컬 상태 초기화
+      // 서버 오류 무시
     } finally {
       setAccessToken(null);
       setCurrentUser(null);
@@ -130,7 +133,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   return createElement(AuthContext.Provider, { value }, children);
 }
 
-// ─── Hook ────────────────────────────────────────────────────────
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) {

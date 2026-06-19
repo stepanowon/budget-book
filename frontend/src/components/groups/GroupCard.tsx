@@ -22,9 +22,10 @@ export default function GroupCard({ group }: GroupCardProps) {
     }
   };
 
+  const fmt = (d: string) => d.slice(0, 10);
   const periodText =
     group.type === 'LIMITED'
-      ? `${group.start_date} ~ ${group.end_date ?? ''}`
+      ? `${fmt(group.start_date)} ~ ${group.end_date ? fmt(group.end_date) : ''}`
       : '상시';
 
   const statusLabel = group.status === 'ACTIVE' ? '활성' : '비활성';

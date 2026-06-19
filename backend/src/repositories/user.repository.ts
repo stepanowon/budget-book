@@ -32,3 +32,7 @@ export async function createUser(params: {
 export async function deactivateUser(id: string): Promise<void> {
   await sql`UPDATE users SET status = 'inactive' WHERE id = ${id}`;
 }
+
+export async function updatePasswordHash(id: string, password_hash: string): Promise<void> {
+  await sql`UPDATE users SET password_hash = ${password_hash} WHERE id = ${id}`;
+}

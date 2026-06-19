@@ -21,6 +21,10 @@ export async function logout(): Promise<void> {
   await apiClient.post('/auth/logout');
 }
 
+export async function changePassword(data: { current_password: string; new_password: string }): Promise<void> {
+  await apiClient.patch('/auth/password', data);
+}
+
 export async function withdraw(): Promise<void> {
   await apiClient.delete('/auth/withdraw');
 }

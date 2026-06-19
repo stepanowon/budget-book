@@ -21,8 +21,8 @@ export async function getCategoryReport(
   return rows.map((r) => {
     const row = r as unknown as Record<string, unknown>;
     return {
-      categoryId: row['category_id'] as string,
-      name: row['category_name'] as string,
+      category_id: row['category_id'] as string,
+      category_name: row['category_name'] as string,
       total: row['total'] as number,
     };
   });
@@ -57,10 +57,10 @@ export async function getMemberReport(
     const row = r as unknown as Record<string, unknown>;
     const userId = row['user_id'] as string;
     return {
-      userId,
+      user_id: userId,
       username: row['username'] as string,
-      totalShare: row['total_share'] as number,
-      totalPaid: paidMap.get(userId) ?? 0,
+      total_share: row['total_share'] as number,
+      total_paid: paidMap.get(userId) ?? 0,
     };
   });
 }

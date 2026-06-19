@@ -10,7 +10,7 @@ interface ExpenseFormProps {
   categories: CategoryResponse[];
   members: GroupMemberResponse[];
   currentUserId: string;
-  initialValues?: Partial<CreateExpenseRequest & { paid_by: string }>;
+  initialValues?: Partial<CreateExpenseRequest & { paid_by: string; custom_splits: Record<string, string> }>;
   onSubmit: (data: CreateExpenseRequest) => void;
   isSubmitting: boolean;
   onCancel: () => void;
@@ -37,7 +37,7 @@ export default function ExpenseForm({
   const [totalAmount, setTotalAmount] = useState(
     initialValues?.total_amount ? String(initialValues.total_amount) : '',
   );
-  const [date, setDate] = useState(initialValues?.date ?? today);
+  const [date, setDate] = useState((initialValues?.date ?? today).slice(0, 10));
   const [categoryId, setCategoryId] = useState(initialValues?.category_id ?? '');
   const [splitType, setSplitType] = useState<'EQUAL' | 'CUSTOM'>(
     initialValues?.split_type ?? SPLIT_TYPE.EQUAL,
@@ -48,7 +48,9 @@ export default function ExpenseForm({
   const [paidBy, setPaidBy] = useState(
     initialValues?.paid_by ?? currentUserId,
   );
-  const [customSplits, setCustomSplits] = useState<Record<string, string>>({});
+  const [customSplits, setCustomSplits] = useState<Record<string, string>>(
+    initialValues?.custom_splits ?? {},
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 결제자는 항상 참여자에 포함

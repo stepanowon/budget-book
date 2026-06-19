@@ -36,8 +36,8 @@ export async function getSettlementDetail(
   groupId: string,
   settlementId: string,
 ): Promise<SettlementDetailResponse[]> {
-  const response = await apiClient.get<ApiResponse<SettlementDetailResponse[]>>(
+  const response = await apiClient.get<ApiResponse<{ settlement: Settlement; details: SettlementDetailResponse[] }>>(
     `/groups/${groupId}/settlements/${settlementId}`,
   );
-  return response.data.data;
+  return response.data.data.details;
 }

@@ -109,7 +109,7 @@ export interface Settlement {
   period_start: string;
   period_end: string;
   created_by: string;
-  created_at: string;
+  settled_at: string;
 }
 
 export interface SettlementDetail {

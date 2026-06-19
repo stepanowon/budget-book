@@ -12,6 +12,7 @@ interface ExpenseCardProps {
   onEdit: (expenseId: string) => void;
   onDelete: (expenseId: string) => void;
   paidByUsername?: string;
+  participantNames?: string[];
 }
 
 export default function ExpenseCard({
@@ -22,6 +23,7 @@ export default function ExpenseCard({
   onEdit,
   onDelete,
   paidByUsername,
+  participantNames,
 }: ExpenseCardProps) {
   const category = categories.find((c) => c.id === expense.category_id);
   const canEditOrDelete =
@@ -42,8 +44,17 @@ export default function ExpenseCard({
           </div>
         )}
         <div className="text-xs text-neutral mt-1">
-          {formatDisplayDate(expense.date)}
-          {paidByUsername && ` · 결제자: ${paidByUsername}`}
+          <span>{formatDisplayDate(expense.date)}</span>
+          {paidByUsername && (
+            <>
+              <span className="hidden md:inline"> · </span>
+              <br className="md:hidden" />
+              <span>결제자: {paidByUsername}</span>
+            </>
+          )}
+          {participantNames && participantNames.length > 0 && (
+            <span className="hidden md:inline"> · 참여: {participantNames.join(', ')}</span>
+          )}
         </div>
       </div>
       {canEditOrDelete && (

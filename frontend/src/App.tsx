@@ -51,15 +51,13 @@ export default function App() {
               >
                 <Route index element={<GroupListPage />} />
                 <Route path="new" element={<GroupCreatePage />} />
-                <Route path=":groupId" element={<GroupDetailPage />} />
-                <Route path=":groupId/expenses" element={<ExpenseListPage />} />
-                <Route path=":groupId/expenses/new" element={<ExpenseFormPage />} />
-                <Route
-                  path=":groupId/expenses/:expenseId/edit"
-                  element={<ExpenseFormPage />}
-                />
-                <Route path=":groupId/settlements" element={<SettlementPage />} />
-                <Route path=":groupId/categories" element={<CategoryPage />} />
+                <Route path=":groupId" element={<GroupDetailPage />}>
+                  <Route path="expenses" element={<ExpenseListPage />} />
+                  <Route path="expenses/new" element={<ExpenseFormPage />} />
+                  <Route path="expenses/:expenseId/edit" element={<ExpenseFormPage />} />
+                  <Route path="settlements" element={<SettlementPage />} />
+                  <Route path="categories" element={<CategoryPage />} />
+                </Route>
               </Route>
 
               <Route

@@ -231,9 +231,9 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 
 **완료 조건**
 - [x] supabase db status로 마이그레이션 이력 정상 추적
-- [ ] supabase db reset으로 전체 스키마가 idempotent하게 재구성
+- [x] supabase db reset으로 전체 스키마가 idempotent하게 재구성
 - [x] 마이그레이션 파일 순서가 의존성(테이블→인덱스→시드→함수→RLS)을 준수
-- [ ] 로컬 환경과 원격 Supabase 프로젝트에 동일한 마이그레이션 적용 가능
+- [x] 로컬 환경과 원격 Supabase 프로젝트에 동일한 마이그레이션 적용 가능
 
 ---
 

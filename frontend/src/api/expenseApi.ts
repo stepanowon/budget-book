@@ -21,11 +21,11 @@ export async function getExpenses(
   if (filters?.date_to) params.date_to = filters.date_to;
   if (filters?.category_id) params.category_id = filters.category_id;
 
-  const response = await apiClient.get<ApiResponse<ExpenseResponse[]>>(
+  const response = await apiClient.get<ApiResponse<{ expenses: ExpenseResponse[]; total: number }>>(
     `/groups/${groupId}/expenses`,
     { params },
   );
-  return response.data.data;
+  return response.data.data.expenses;
 }
 
 export async function getExpense(

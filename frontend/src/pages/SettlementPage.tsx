@@ -1,7 +1,5 @@
 import { useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { useGroupMembers } from '@/hooks/useGroups';
-import { useAuth } from '@/hooks/useAuth';
+import { useParams, useOutletContext } from 'react-router-dom';
 import { useToast } from '@/contexts/ToastContext';
 import {
   useSettlements,
@@ -59,21 +57,24 @@ function SettlementDetailPanel({
           엑셀 내보내기
         </Button>
       </div>
-      <table className="w-full border-collapse text-sm" aria-label="정산 상세">
+      <table className="w-full border-collapse text-[11px]" aria-label="정산 상세">
         <thead>
           <tr>
-            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">멤버</th>
-            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">결제액</th>
-            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">분담액</th>
-            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium text-xs border-b border-border">차액</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium border-b border-border">멤버</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium border-b border-border">결제액</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium border-b border-border">분담액</th>
+            <th className="text-left px-3 py-2 bg-[#f8f9fa] text-neutral font-medium border-b border-border">차액</th>
           </tr>
         </thead>
         <tbody>
           {details.map((detail) => {
             const balance = detail.balance;
+            const name = detail.username.length > 4
+              ? detail.username.slice(0, 4) + '…'
+              : detail.username;
             return (
               <tr key={detail.user_id} className="[&:last-child_td]:border-b-0">
-                <td className="px-3 py-2 border-b border-border">{detail.username}</td>
+                <td className="px-3 py-2 border-b border-border max-w-[80px] truncate" title={detail.username}>{name}</td>
                 <td className="px-3 py-2 border-b border-border [font-variant-numeric:tabular-nums]">
                   {formatCurrency(detail.total_paid)}
                 </td>
@@ -86,9 +87,9 @@ function SettlementDetailPanel({
                   }`}
                 >
                   {balance >= 0 ? (
-                    <>+{formatCurrency(balance)} <span className="text-xs font-normal">받을 금액</span></>
+                    <>+{formatCurrency(balance)} <span className="font-normal">받을 금액</span></>
                   ) : (
-                    <>{formatCurrency(Math.abs(balance))} <span className="text-xs font-normal">낼 금액</span></>
+                    <>{formatCurrency(Math.abs(balance))} <span className="font-normal">낼 금액</span></>
                   )}
                 </td>
               </tr>
@@ -102,23 +103,25 @@ function SettlementDetailPanel({
 
 export default function SettlementPage() {
   const { groupId = '' } = useParams<{ groupId: string }>();
-  const { currentUser } = useAuth();
   const { showToast } = useToast();
 
-  const { data: members = [] } = useGroupMembers(groupId);
+  const { isManager } = useOutletContext<{ isManager: boolean }>();
   const { data: settlements = [], isLoading: isLoadingList } = useSettlements(groupId);
   const createSettlement = useCreateSettlement(groupId);
 
-  const [periodStart, setPeriodStart] = useState('');
-  const [periodEnd, setPeriodEnd] = useState('');
+  const prevMonth = new Date();
+  prevMonth.setDate(1);
+  prevMonth.setMonth(prevMonth.getMonth() - 1);
+  const prevMonthStart = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 0).getDate();
+  const prevMonthEnd = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  const [periodStart, setPeriodStart] = useState(prevMonthStart);
+  const [periodEnd, setPeriodEnd] = useState(prevMonthEnd);
   const [dateError, setDateError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-
-  const currentRole =
-    members.find((m) => m.user_id === currentUser?.id)?.role ?? 'MEMBER';
-  const isManager = currentRole === 'MANAGER';
 
   function handleRunClick() {
     setDateError('');
@@ -162,7 +165,7 @@ export default function SettlementPage() {
         {isManager && (
           <section>
             <h2 className="text-xl font-semibold text-[#202124] m-0 mb-4">정산 실행</h2>
-            <div className="bg-white border border-border rounded p-6 flex flex-col gap-4 max-w-[480px]">
+            <div className="bg-white border border-border rounded p-6 flex flex-col gap-4">
               <div className="flex gap-4 flex-wrap">
                 <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
                   <label className="text-xs font-medium text-neutral" htmlFor="sp-start">
@@ -230,7 +233,7 @@ export default function SettlementPage() {
                         {formatDisplayDate(s.period_start)} ~ {formatDisplayDate(s.period_end)}
                       </div>
                       <div className="text-xs text-neutral mt-0.5">
-                        실행일: {formatDisplayDateTime(s.created_at)}
+                        실행일: {formatDisplayDateTime(s.settled_at)}
                       </div>
                     </div>
                     <span className="text-neutral text-lg">
