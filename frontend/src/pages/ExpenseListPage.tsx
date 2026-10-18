@@ -23,27 +23,27 @@ export default function ExpenseListPage() {
   const { currentUser } = useAuth();
   const { showToast } = useToast();
 
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const plus30Str = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-  const [dateFrom, setDateFrom] = useState(todayStr);
-  const [dateTo, setDateTo] = useState(plus30Str);
+  // 사용자가 직접 바꾸기 전까지는 그룹 기간이 기본 조회 기간
+  const [dateFromInput, setDateFrom] = useState<string | undefined>();
+  const [dateToInput, setDateTo] = useState<string | undefined>();
   const [categoryFilter, setCategoryFilter] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
-
-  const filters = {
-    ...(dateFrom && { date_from: dateFrom }),
-    ...(dateTo && { date_to: dateTo }),
-    ...(categoryFilter && { category_id: categoryFilter }),
-  };
 
   const { data: expenses = [], isLoading } = useExpenses(groupId);
   const { data: categories = [] } = useCategories(groupId);
   const { data: members = [] } = useGroupMembers(groupId);
   const { data: group } = useGroup(groupId);
   const deleteExpense = useDeleteExpense(groupId);
+
+  const dateFrom = dateFromInput ?? group?.start_date?.slice(0, 10) ?? '';
+  const dateTo = dateToInput ?? group?.end_date?.slice(0, 10) ?? '';
+
+  const filters = {
+    ...(dateFrom && { date_from: dateFrom }),
+    ...(dateTo && { date_to: dateTo }),
+    ...(categoryFilter && { category_id: categoryFilter }),
+  };
 
   // 필터는 클라이언트 사이드로 적용 (API가 지원하면 setFilters 사용)
   const filteredExpenses = expenses.filter((e) => {
