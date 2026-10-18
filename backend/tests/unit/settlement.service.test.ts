@@ -70,7 +70,7 @@ describe('settlement.service — createSettlement (BE-22)', () => {
     });
 
     const messagesArg = mockSettlementRepo.createMessages.mock.calls[0][0];
-    const recipientIds = messagesArg.map((m) => m.recipient_id);
+    const recipientIds = messagesArg.map((m) => m.recipient_user_id);
     expect(recipientIds).toContain('user-a');
     expect(recipientIds).toContain('user-b');
   });

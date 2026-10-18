@@ -14,8 +14,8 @@ beforeEach(() => jest.clearAllMocks());
 describe('report.service — getCategoryReport', () => {
   it('카테고리별 리포트를 반환한다', async () => {
     const mockData = [
-      { categoryId: 'cat-1', name: '식비', total: 50000 },
-      { categoryId: 'cat-2', name: '교통', total: 20000 },
+      { category_id: 'cat-1', category_name: '식비', total: 50000 },
+      { category_id: 'cat-2', category_name: '교통', total: 20000 },
     ];
     mockReportRepo.getCategoryReport.mockResolvedValue(mockData);
 
@@ -37,7 +37,7 @@ describe('report.service — getCategoryReport', () => {
 describe('report.service — getMemberReport', () => {
   it('멤버별 리포트를 반환한다', async () => {
     const mockData = [
-      { userId: 'u1', username: 'alice', totalShare: 30000, totalPaid: 50000 },
+      { user_id: 'u1', username: 'alice', total_share: 30000, total_paid: 50000 },
     ];
     mockReportRepo.getMemberReport.mockResolvedValue(mockData);
 

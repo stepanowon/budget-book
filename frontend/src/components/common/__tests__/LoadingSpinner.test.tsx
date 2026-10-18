@@ -16,11 +16,11 @@ describe('LoadingSpinner', () => {
 
   it('sm 사이즈 클래스가 적용된다', () => {
     render(<LoadingSpinner size="sm" />);
-    expect(screen.getByRole('status')).toHaveClass('loading-spinner--sm');
+    expect(screen.getByRole('status')).toHaveClass('w-4', 'h-4');
   });
 
   it('lg 사이즈 클래스가 적용된다', () => {
     render(<LoadingSpinner size="lg" />);
-    expect(screen.getByRole('status')).toHaveClass('loading-spinner--lg');
+    expect(screen.getByRole('status')).toHaveClass('w-10', 'h-10');
   });
 });

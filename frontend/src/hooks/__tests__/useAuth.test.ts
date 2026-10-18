@@ -44,6 +44,8 @@ function wrapper({ children }: { children: ReactNode }) {
 describe('useAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // AuthProvider는 마운트 시 localStorage의 토큰으로 로그인 상태를 복원하므로 테스트 간 격리가 필요하다
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -58,10 +60,11 @@ describe('useAuth', () => {
   });
 
   it('login 성공 시 isAuthenticated=true, accessToken 저장', async () => {
+    // 서버가 발급하는 Access Token 페이로드: { id, username, status }
     const token = makeDummyToken({
-      sub: 'user-1',
-      email: 'test@example.com',
+      id: 'user-1',
       username: 'tester',
+      status: 'active',
     });
 
     vi.mocked(authApi.login).mockResolvedValueOnce({
@@ -76,9 +79,10 @@ describe('useAuth', () => {
     });
 
     expect(result.current.isAuthenticated).toBe(true);
+    // 토큰에는 이메일이 없으므로 currentUser.email은 빈 문자열이다
     expect(result.current.currentUser).toEqual({
       id: 'user-1',
-      email: 'test@example.com',
+      email: '',
       username: 'tester',
     });
     expect(getAccessToken()).toBe(token);
@@ -116,9 +120,9 @@ describe('useAuth', () => {
 
   it('logout 성공 시 isAuthenticated=false, accessToken null', async () => {
     const token = makeDummyToken({
-      sub: 'user-1',
-      email: 'test@example.com',
+      id: 'user-1',
       username: 'tester',
+      status: 'active',
     });
 
     vi.mocked(authApi.login).mockResolvedValueOnce({

@@ -38,6 +38,9 @@ const mockGroup = {
   created_at: new Date().toISOString(),
 };
 
+// 목록·상세 조회 응답은 my_role, member_count를 포함한다
+const mockGroupForUser = { ...mockGroup, my_role: 'MANAGER', member_count: 1 };
+
 const mockUser = {
   id: 'user-uuid',
   username: 'testuser',
@@ -83,7 +86,7 @@ describe('group.service — createGroup (BE-14)', () => {
 
 describe('group.service — getMyGroups (BE-14)', () => {
   it('사용자의 그룹 목록 반환', async () => {
-    mockGroupRepo.findGroupsByUserId.mockResolvedValue([mockGroup]);
+    mockGroupRepo.findGroupsByUserId.mockResolvedValue([mockGroupForUser]);
     const result = await getMyGroups('user-uuid');
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('group-uuid');
@@ -92,19 +95,21 @@ describe('group.service — getMyGroups (BE-14)', () => {
 
 describe('group.service — getGroupDetail (BE-15)', () => {
   it('그룹 상세 조회 성공 (멤버 포함)', async () => {
-    mockGroupRepo.findGroupById.mockResolvedValue(mockGroup);
+    mockGroupRepo.findGroupByIdForUser.mockResolvedValue(mockGroupForUser);
     mockGroupRepo.findGroupMembers.mockResolvedValue([
       { id: 'm1', group_id: 'group-uuid', user_id: 'user-uuid', role: 'MANAGER', joined_at: new Date().toISOString(), username: 'testuser' },
     ]);
 
-    const result = await getGroupDetail('group-uuid');
+    const result = await getGroupDetail('group-uuid', 'user-uuid');
+    expect(mockGroupRepo.findGroupByIdForUser).toHaveBeenCalledWith('group-uuid', 'user-uuid');
     expect(result.id).toBe('group-uuid');
+    expect(result.my_role).toBe('MANAGER');
     expect(result.members).toHaveLength(1);
   });
 
   it('존재하지 않는 그룹 조회 시 NotFoundError', async () => {
-    mockGroupRepo.findGroupById.mockResolvedValue(null);
-    await expect(getGroupDetail('nonexistent')).rejects.toBeInstanceOf(NotFoundError);
+    mockGroupRepo.findGroupByIdForUser.mockResolvedValue(null);
+    await expect(getGroupDetail('nonexistent', 'user-uuid')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
 

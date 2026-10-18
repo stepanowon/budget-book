@@ -213,10 +213,10 @@ describe('통합 테스트 — Group Controller', () => {
 // 초대 수락/거절 — 인증 필요
 // -----------------------------------------------------------------------
 describe('통합 테스트 — Invitation (권한 거부 시나리오)', () => {
-  it('PATCH /invitations/:id/respond — 인증 없이 접근 시 401 반환 (권한 거부 시나리오 4)', async () => {
+  it('PATCH /invitations/:id — 인증 없이 접근 시 401 반환 (권한 거부 시나리오 4)', async () => {
     const res = await request(app)
-      .patch('/api/v1/invitations/inv-uuid/respond')
-      .send({ action: 'accept' });
+      .patch('/api/v1/invitations/inv-uuid')
+      .send({ action: 'ACCEPT' });
 
     expect(res.status).toBe(401);
     expect(res.body.errorCode).toBe('UNAUTHENTICATED');

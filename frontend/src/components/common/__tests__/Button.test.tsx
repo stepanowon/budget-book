@@ -37,11 +37,11 @@ describe('Button', () => {
 
   it('variant=danger 클래스가 적용된다', () => {
     render(<Button variant="danger">삭제</Button>);
-    expect(screen.getByRole('button')).toHaveClass('btn--danger');
+    expect(screen.getByRole('button')).toHaveClass('bg-danger');
   });
 
   it('size=sm 클래스가 적용된다', () => {
     render(<Button size="sm">작은버튼</Button>);
-    expect(screen.getByRole('button')).toHaveClass('btn--sm');
+    expect(screen.getByRole('button')).toHaveClass('text-xs');
   });
 });
