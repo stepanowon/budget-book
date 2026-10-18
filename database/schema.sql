@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS invitations (
     id                UUID              NOT NULL DEFAULT gen_random_uuid(),
     group_id          UUID              NOT NULL,
     inviter_id        UUID              NOT NULL,
-    invitee_username  VARCHAR(20)       NOT NULL, -- 초대받는 사용자의 username (active 사용자여야 함)
+    invitee_id        UUID              NOT NULL, -- 초대받는 사용자 (active 사용자여야 함)
     status            invitation_status NOT NULL DEFAULT 'PENDING',
     created_at        TIMESTAMPTZ       NOT NULL DEFAULT now(),
     expires_at        TIMESTAMPTZ       NOT NULL, -- created_at + 7일 (애플리케이션에서 계산하여 저장)
@@ -158,6 +158,8 @@ CREATE TABLE IF NOT EXISTS invitations (
         FOREIGN KEY (group_id)   REFERENCES groups (id) ON DELETE RESTRICT,
     CONSTRAINT fk_invitations_inviter
         FOREIGN KEY (inviter_id) REFERENCES users  (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_invitations_invitee
+        FOREIGN KEY (invitee_id) REFERENCES users  (id) ON DELETE RESTRICT,
     CONSTRAINT chk_invitations_expires_after_created
         CHECK (expires_at > created_at)
 );
