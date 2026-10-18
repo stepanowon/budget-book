@@ -1,6 +1,6 @@
 -- ============================================================
 -- 공동 가계부 서비스 — Database Schema
--- Generated from: docs/6-erd.md v1.1
+-- Generated from: docs/6-erd.md v1.4
 -- Created: 2026-06-18
 -- Database: PostgreSQL 15+ (Supabase)
 -- ============================================================
@@ -343,3 +343,139 @@ INSERT INTO categories (id, name, scope, group_id) VALUES
     (gen_random_uuid(), '의료',     'SYSTEM', NULL),
     (gen_random_uuid(), '기타',     'SYSTEM', NULL)
 ON CONFLICT DO NOTHING;
+
+
+-- ============================================================
+-- 6. FUNCTIONS — 애플리케이션이 호출하는 DB 함수
+-- ============================================================
+-- 각 함수는 하나의 SQL 문(=단일 트랜잭션)으로 호출되므로 내부 변경이 원자적으로 처리된다.
+
+-- ── expire_pending_invitations ─────────────────────────────
+-- expires_at이 지난 PENDING 초대를 EXPIRED로 전환하고 전환 건수를 반환한다. (AC-I5, NFR-A04)
+-- 이미 최종 상태(ACCEPTED/DECLINED/EXPIRED)인 초대는 영향받지 않는다.
+-- 호출: backend/src/jobs/invitationExpiry.job.ts (30분 주기)
+CREATE OR REPLACE FUNCTION expire_pending_invitations()
+RETURNS integer
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+    v_count integer;
+BEGIN
+    UPDATE invitations
+       SET status = 'EXPIRED'
+     WHERE status = 'PENDING'
+       AND expires_at <= now();
+
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END;
+$$;
+
+-- ── transfer_manager_or_deactivate_group ───────────────────
+-- 사용자가 탈퇴할 때 해당 그룹에서의 소속을 정리한다. (BR-12, BR-13, BR-14)
+--   - MEMBER: group_members 레코드만 삭제 (AC-GM3)
+--   - MANAGER: joined_at이 가장 이른 active MEMBER를 MANAGER로 승격 후 탈퇴자 레코드 삭제 (AC-GM1)
+--              승격할 active MEMBER가 없으면 그룹을 inactive로 전환하고 탈퇴자 레코드 삭제 (AC-GM2)
+-- 그룹 행을 FOR UPDATE로 잠가 동시 탈퇴 시 중복 승격을 막는다.
+-- 호출: backend/src/services/auth.service.ts withdraw() — 사용자를 inactive로 바꾸기 전에 그룹별로 호출
+CREATE OR REPLACE FUNCTION transfer_manager_or_deactivate_group(p_user_id uuid, p_group_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+    v_role      member_role;
+    v_successor uuid;
+BEGIN
+    PERFORM 1 FROM groups WHERE id = p_group_id FOR UPDATE;
+
+    SELECT role INTO v_role
+      FROM group_members
+     WHERE group_id = p_group_id AND user_id = p_user_id;
+
+    IF NOT FOUND THEN
+        RETURN; -- 소속이 아니면 처리할 것이 없음
+    END IF;
+
+    IF v_role = 'MANAGER' THEN
+        SELECT gm.id INTO v_successor
+          FROM group_members gm
+          JOIN users u ON u.id = gm.user_id
+         WHERE gm.group_id = p_group_id
+           AND gm.role = 'MEMBER'
+           AND gm.user_id <> p_user_id
+           AND u.status = 'active'
+         ORDER BY gm.joined_at ASC, gm.id ASC
+         LIMIT 1;
+
+        IF v_successor IS NOT NULL THEN
+            UPDATE group_members SET role = 'MANAGER' WHERE id = v_successor;
+        ELSE
+            UPDATE groups SET status = 'inactive' WHERE id = p_group_id;
+        END IF;
+    END IF;
+
+    DELETE FROM group_members WHERE group_id = p_group_id AND user_id = p_user_id;
+END;
+$$;
+
+-- ── delete_group_category ──────────────────────────────────
+-- GROUP 카테고리를 삭제한다. 해당 카테고리를 쓰던 지출은 먼저 SYSTEM '기타'로 재분류한다. (BR-10, BR-11)
+--   - SYSTEM 카테고리는 삭제할 수 없다 (AC-C1)
+--   - 사용 중인 지출이 있으면 '기타'로 재분류 후 삭제 (AC-C2), 없으면 그대로 삭제 (AC-C3)
+-- 호출: backend/src/repositories/category.repository.ts deleteGroupCategory()
+CREATE OR REPLACE FUNCTION delete_group_category(p_category_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+    v_scope    category_scope;
+    v_fallback uuid;
+BEGIN
+    SELECT scope INTO v_scope
+      FROM categories
+     WHERE id = p_category_id
+       FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'category % not found', p_category_id;
+    END IF;
+
+    IF v_scope = 'SYSTEM' THEN
+        RAISE EXCEPTION 'SYSTEM category cannot be deleted';
+    END IF;
+
+    SELECT id INTO v_fallback
+      FROM categories
+     WHERE scope = 'SYSTEM' AND name = '기타'
+     ORDER BY id
+     LIMIT 1;
+
+    IF v_fallback IS NULL THEN
+        RAISE EXCEPTION 'fallback category (기타) not found';
+    END IF;
+
+    UPDATE expenses SET category_id = v_fallback WHERE category_id = p_category_id;
+    DELETE FROM categories WHERE id = p_category_id;
+END;
+$$;
+
+-- 이 함수들은 서버(DB 직접 연결)에서만 호출한다. Supabase의 REST(PostgREST) 공개 역할에는 실행 권한을 주지 않는다.
+REVOKE EXECUTE ON FUNCTION expire_pending_invitations() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION transfer_manager_or_deactivate_group(uuid, uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION delete_group_category(uuid) FROM PUBLIC;
+
+DO $$
+DECLARE
+    r text;
+BEGIN
+    FOREACH r IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+            EXECUTE format('REVOKE EXECUTE ON FUNCTION expire_pending_invitations() FROM %I', r);
+            EXECUTE format('REVOKE EXECUTE ON FUNCTION transfer_manager_or_deactivate_group(uuid, uuid) FROM %I', r);
+            EXECUTE format('REVOKE EXECUTE ON FUNCTION delete_group_category(uuid) FROM %I', r);
+        END IF;
+    END LOOP;
+END $$;

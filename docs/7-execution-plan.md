@@ -180,46 +180,46 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 
 ---
 
-### DB-17. 초대 만료 배치 처리 — PENDING → EXPIRED 전환  ← 함수 정의가 database/schema.sql에 없음 (코드는 expire_pending_invitations() 호출)
+### DB-17. 초대 만료 배치 처리 — PENDING → EXPIRED 전환
 > 복잡도: `M` | 의존성: DB-08
 
 expires_at이 현재 시각 이전인 PENDING 초대를 EXPIRED로 일괄 전환한다. NFR-A04(1시간 이내 처리)를 만족해야 한다.
 
 **완료 조건**
-- [ ] expires_at이 지난 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
-- [ ] 배치 실행 주기 최대 30분 간격으로 설정
-- [ ] 이미 최종 상태(ACCEPTED/DECLINED/EXPIRED)인 초대는 영향받지 않음
-- [ ] 배치 실행 결과(전환 건수, 실행 시각)가 로그로 기록
+- [x] expires_at이 지난 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
+- [x] 배치 실행 주기 최대 30분 간격으로 설정
+- [x] 이미 최종 상태(ACCEPTED/DECLINED/EXPIRED)인 초대는 영향받지 않음
+- [x] 배치 실행 결과(전환 건수, 실행 시각)가 로그로 기록
 
 **참조 규칙**: BR-03, AC-I5, NFR-A04
 
 ---
 
-### DB-18. DB 함수 — MANAGER 권한 이양 및 그룹 비활성화  ← 함수 정의가 database/schema.sql에 없음 (코드는 transfer_manager_or_deactivate_group() 호출)
+### DB-18. DB 함수 — MANAGER 권한 이양 및 그룹 비활성화
 > 복잡도: `L` | 의존성: DB-04, DB-02
 
 transfer_manager_or_deactivate_group 함수를 구현하여 MANAGER 탈퇴 시 권한 이양 또는 그룹 비활성화를 트랜잭션으로 처리한다.
 
 **완료 조건**
-- [ ] MANAGER 탈퇴 시 joined_at 기준 최선임 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
-- [ ] 활성 MEMBER가 없으면 그룹이 inactive로 전환 (AC-GM2)
-- [ ] MEMBER 탈퇴 시 group_members 레코드만 삭제 (AC-GM3)
-- [ ] 동시 탈퇴 시나리오에서 트랜잭션 격리로 중복 MANAGER 승격 방지
+- [x] MANAGER 탈퇴 시 joined_at 기준 최선임 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
+- [x] 활성 MEMBER가 없으면 그룹이 inactive로 전환 (AC-GM2)
+- [x] MEMBER 탈퇴 시 group_members 레코드만 삭제 (AC-GM3)
+- [x] 동시 탈퇴 시나리오에서 트랜잭션 격리로 중복 MANAGER 승격 방지
 
 **참조 규칙**: BR-13, BR-14, BR-12, AC-GM1, AC-GM2, AC-GM3
 
 ---
 
-### DB-19. DB 함수 — GROUP 카테고리 삭제 및 지출 재분류  ← 함수 정의가 database/schema.sql에 없음 (코드는 delete_group_category() 호출)
+### DB-19. DB 함수 — GROUP 카테고리 삭제 및 지출 재분류
 > 복잡도: `M` | 의존성: DB-05, DB-06, DB-10
 
 delete_group_category 함수: 트랜잭션 내에서 지출을 '기타'로 UPDATE한 후 카테고리를 DELETE한다.
 
 **완료 조건**
-- [ ] GROUP 카테고리 삭제 시 해당 카테고리 지출이 '기타'로 재분류 (AC-C2)
-- [ ] 사용 중인 지출이 없는 GROUP 카테고리도 정상 삭제 (AC-C3)
-- [ ] SYSTEM 카테고리에 대해 함수 호출 시 예외 발생 (AC-C1)
-- [ ] UPDATE와 DELETE가 하나의 트랜잭션 내에서 원자적으로 처리
+- [x] GROUP 카테고리 삭제 시 해당 카테고리 지출이 '기타'로 재분류 (AC-C2)
+- [x] 사용 중인 지출이 없는 GROUP 카테고리도 정상 삭제 (AC-C3)
+- [x] SYSTEM 카테고리에 대해 함수 호출 시 예외 발생 (AC-C1)
+- [x] UPDATE와 DELETE가 하나의 트랜잭션 내에서 원자적으로 처리
 
 **참조 규칙**: BR-10, BR-11, AC-C1, AC-C2, AC-C3
 
@@ -477,7 +477,7 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 순서대
 - [x] SYSTEM 카테고리 삭제 시도 시 403 반환 (AC-C1, BR-10)
 - [x] GROUP 카테고리 삭제 시 해당 카테고리 사용 Expense가 '기타'로 재분류 (AC-C2)
 - [x] 사용 중인 지출 없는 GROUP 카테고리 삭제 시 카테고리만 삭제 (AC-C3)
-- [ ] 삭제와 재분류가 단일 트랜잭션으로 처리 (DB 함수 delete_group_category에 의존, 함수 정의는 schema.sql에 없음)
+- [x] 삭제와 재분류가 DB 함수 delete_group_category 안에서 원자적으로 처리
 - [x] MEMBER의 추가/삭제 시도 시 403 반환
 
 **참조 규칙**: FR-C01, FR-C02, FR-C03, FR-C04, BR-10, BR-11, AC-C1, AC-C2, AC-C3

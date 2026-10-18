@@ -1,6 +1,6 @@
 # ERD (Entity Relationship Diagram) — 공동 가계부 서비스
 
-> 버전: 1.3
+> 버전: 1.4
 > 작성일: 2026-06-18
 > 수정일: 2026-10-18
 > 관련 문서: 1-domain-definition.md · 2-prd.md · 5-arch-diagram.md
@@ -408,13 +408,13 @@ erDiagram
 
 ### 2.12 DB 함수와 인덱스
 
-**DB 함수** — 애플리케이션이 호출하는 함수이며, 현재 `database/schema.sql`에는 **정의가 포함되어 있지 않다** (DB에 별도로 적용해야 한다).
+**DB 함수** — 애플리케이션이 호출하는 함수이며 `database/schema.sql` 6절에 정의되어 있다. 모두 `CREATE OR REPLACE`라 재실행해도 안전하고, `PUBLIC`·`anon`·`authenticated`의 실행 권한은 회수되어 서버(DB 직접 연결)에서만 호출된다.
 
 | 함수 | 호출 위치 | 역할 |
 |------|----------|------|
-| `expire_pending_invitations()` | `jobs/invitationExpiry.job.ts` | `expires_at`이 지난 `PENDING` 초대를 `EXPIRED`로 전환 |
-| `transfer_manager_or_deactivate_group(user_id, group_id)` | `auth.service.ts` (탈퇴) | MANAGER 권한 이양(BR-13) 또는 그룹 비활성화(BR-14) |
-| `delete_group_category(...)` | `category.repository.ts` | 지출을 `기타`로 재분류한 뒤 GROUP 카테고리 삭제(BR-11) |
+| `expire_pending_invitations()` | `jobs/invitationExpiry.job.ts` | `expires_at`이 지난 `PENDING` 초대를 `EXPIRED`로 전환하고 전환 건수(integer)를 반환 |
+| `transfer_manager_or_deactivate_group(user_id, group_id)` | `auth.service.ts` (탈퇴) | 탈퇴자의 소속 정리. MANAGER면 `joined_at`이 가장 이른 active MEMBER를 승격(BR-13), 후임이 없으면 그룹을 `inactive`로 전환(BR-14). 어느 경우든 탈퇴자의 `group_members` 레코드는 삭제. 그룹 행을 `FOR UPDATE`로 잠가 동시 탈퇴를 직렬화 |
+| `delete_group_category(category_id)` | `category.repository.ts` | 지출을 SYSTEM `기타`로 재분류한 뒤 GROUP 카테고리 삭제(BR-11). SYSTEM 카테고리는 예외로 거부(BR-10) |
 
 **인덱스** (`database/schema.sql`)
 
@@ -554,3 +554,4 @@ PENDING ──▶ ACCEPTED   (초대받은 사용자가 수락, AC-I4)
 | 1.1 | 2026-06-18 | P1~P5 보완 — FK ON DELETE 전략 명시, enum CHECK 추가, balance GENERATED COLUMN 변경, DR-03/05 CHECK 전략 명시, GroupMember 삭제 정책 명확화 | stepanowon |
 | 1.2 | 2026-06-18 | invitations.invitee_username → invitee_id(uuid FK) 변경 — API 구현 중 username 저장 대신 user_id FK로 정규화 결정 | stepanowon |
 | 1.3 | 2026-10-18 | 코드·schema.sql 동기화 — refresh_tokens 엔티티(2.11) 추가, PostgreSQL ENUM 타입 사용 명시, users.username·groups.name·categories(name, scope/group_id)·invitations.expires_at CHECK 제약 반영, DR-03을 DB CHECK로 정정, 인덱스·DB 함수 절(2.12) 추가, 메시지 본문을 실제 구현(안내 문구+기간)으로 정정, 초대 만료 배치 30분 주기·responded_at 미기록 현황 반영, MEMBER 지출 수정·삭제 기준을 결제자로 정정 | stepanowon |
+| 1.4 | 2026-10-18 | DB 함수 3종(expire_pending_invitations, transfer_manager_or_deactivate_group, delete_group_category)을 schema.sql 6절에 추가하고 2.12절의 "정의 없음" 안내를 갱신 | stepanowon |
