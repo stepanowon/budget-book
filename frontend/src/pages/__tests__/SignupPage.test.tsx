@@ -9,7 +9,7 @@ vi.mock('@/api/authApi', () => ({
   signup: vi.fn(),
 }));
 
-async function fillAndSubmit(username: string) {
+async function fillAndSubmit(username: string, password = 'Passw0rd!') {
   const user = userEvent.setup();
   render(
     <MemoryRouter>
@@ -17,12 +17,12 @@ async function fillAndSubmit(username: string) {
     </MemoryRouter>,
   );
   await user.type(screen.getByLabelText('이메일'), 'new@example.com');
-  await user.type(screen.getByLabelText('비밀번호'), 'Passw0rd!');
+  await user.type(screen.getByLabelText('비밀번호'), password);
   if (username) await user.type(screen.getByLabelText('사용자 이름'), username);
   await user.click(screen.getByRole('button', { name: '회원가입' }));
 }
 
-describe('SignupPage username 검증', () => {
+describe('SignupPage username·비밀번호 검증', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -35,6 +35,17 @@ describe('SignupPage username 검증', () => {
     ['', '입력해 주세요'],
   ])('%j 는 오류를 표시하고 서버를 호출하지 않는다', async (username, message) => {
     await fillAndSubmit(username);
+    expect(screen.getByRole('alert')).toHaveTextContent(message);
+    expect(authApi.signup).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['abcdefgh', '영문자, 숫자, 특수문자를 각각 1자 이상'],
+    ['abcdefg1', '영문자, 숫자, 특수문자를 각각 1자 이상'],
+    ['12345678!', '영문자, 숫자, 특수문자를 각각 1자 이상'],
+    ['a1!', '8자 이상'],
+  ])('비밀번호 %j 는 오류를 표시하고 서버를 호출하지 않는다', async (password, message) => {
+    await fillAndSubmit('user_01', password);
     expect(screen.getByRole('alert')).toHaveTextContent(message);
     expect(authApi.signup).not.toHaveBeenCalled();
   });

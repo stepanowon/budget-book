@@ -37,3 +37,20 @@ export function getUsernameError(username: string): string | null {
   }
   return null;
 }
+
+export const PASSWORD_MIN_LENGTH = 8;
+
+/**
+ * 비밀번호 유효성 검사 (서버 규칙과 동일: 8자 이상, 영문자·숫자·특수문자 각 1자 이상)
+ * @returns 오류 메시지. 유효하면 null
+ */
+export function getPasswordError(password: string): string | null {
+  if (!password) return '비밀번호를 입력해 주세요';
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다`;
+  }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    return '비밀번호는 영문자, 숫자, 특수문자를 각각 1자 이상 포함해야 합니다';
+  }
+  return null;
+}

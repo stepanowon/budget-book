@@ -5,7 +5,7 @@ import * as authApi from '@/api/authApi';
 import { ROUTES } from '@/constants/routes';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import { getUsernameError } from '@/utils/validators';
+import { getPasswordError, getUsernameError } from '@/utils/validators';
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -27,11 +27,8 @@ export default function SignupPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = '올바른 이메일 형식이 아닙니다';
     }
-    if (!password) {
-      errors.password = '비밀번호를 입력해 주세요';
-    } else if (password.length < 8) {
-      errors.password = '비밀번호는 8자 이상이어야 합니다';
-    }
+    const passwordError = getPasswordError(password);
+    if (passwordError) errors.password = passwordError;
     const usernameError = getUsernameError(username);
     if (usernameError) errors.username = usernameError;
     setFieldErrors(errors);
@@ -82,7 +79,7 @@ export default function SignupPage() {
           onChange={(e) => setPassword(e.target.value)}
           error={fieldErrors.password}
           autoComplete="new-password"
-          placeholder="8자 이상 입력하세요"
+          placeholder="8자 이상, 영문·숫자·특수문자 포함"
         />
         <Input
           label="사용자 이름"

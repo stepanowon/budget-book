@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateAmount, validateDateRange, getUsernameError } from '../validators';
+import { validateAmount, validateDateRange, getUsernameError, getPasswordError } from '../validators';
 
 describe('validateAmount', () => {
   it('1은 유효하다', () => {
@@ -72,5 +72,33 @@ describe('getUsernameError', () => {
     for (const bad of ['UserName', '홍길동입니다', 'user name', 'user-name', 'user.name', 'user@123']) {
       expect(getUsernameError(bad)).toBe('영문 소문자, 숫자, 밑줄(_)만 사용할 수 있습니다');
     }
+  });
+});
+
+describe('getPasswordError', () => {
+  it('8자 이상이고 영문자·숫자·특수문자를 모두 포함하면 유효하다', () => {
+    expect(getPasswordError('asdf!2345')).toBeNull();
+    expect(getPasswordError('P@ssw0rd!')).toBeNull();
+  });
+
+  it('공백도 서버와 동일하게 특수문자로 취급한다', () => {
+    expect(getPasswordError('abc 1234')).toBeNull();
+  });
+
+  it('비어 있으면 입력 안내를 반환한다', () => {
+    expect(getPasswordError('')).toBe('비밀번호를 입력해 주세요');
+  });
+
+  it('8자 미만은 유효하지 않다', () => {
+    expect(getPasswordError('a1!')).toContain('8자 이상');
+    expect(getPasswordError('abcd1!2')).toContain('8자 이상');
+  });
+
+  it('영문자·숫자·특수문자 중 하나라도 빠지면 유효하지 않다', () => {
+    const message = '비밀번호는 영문자, 숫자, 특수문자를 각각 1자 이상 포함해야 합니다';
+    expect(getPasswordError('abcdefgh')).toBe(message); // 숫자·특수문자 없음
+    expect(getPasswordError('abcdefg1')).toBe(message); // 특수문자 없음
+    expect(getPasswordError('abcdefg!')).toBe(message); // 숫자 없음
+    expect(getPasswordError('12345678!')).toBe(message); // 영문자 없음
   });
 });
