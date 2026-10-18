@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/constants/routes';
 import { useToast } from '@/contexts/ToastContext';
 import * as authApi from '@/api/authApi';
 import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
+import { getPasswordError } from '@/utils/validators';
 
 const inputClass =
   'px-3 py-2 border border-border rounded text-sm font-sans min-h-[44px] text-[#202124] bg-white w-full outline-none focus:border-primary focus:ring-2 focus:ring-primary-light';
@@ -31,10 +33,8 @@ export default function WithdrawPage() {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!currentPassword) errs.currentPassword = '현재 비밀번호를 입력해주세요.';
-    if (!newPassword) errs.newPassword = '새 비밀번호를 입력해주세요.';
-    else if (newPassword.length < 8) errs.newPassword = '비밀번호는 8자 이상이어야 합니다.';
-    else if (!/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword))
-      errs.newPassword = '영문자, 숫자, 특수문자를 모두 포함해야 합니다.';
+    const newPasswordError = getPasswordError(newPassword);
+    if (newPasswordError) errs.newPassword = newPasswordError;
     if (newPassword !== confirmPassword) errs.confirmPassword = '새 비밀번호가 일치하지 않습니다.';
     setPwErrors(errs);
     if (Object.keys(errs).length > 0) return;
@@ -47,8 +47,11 @@ export default function WithdrawPage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '비밀번호 변경 중 오류가 발생했습니다.';
-      showToast(msg, 'error');
+      // 서버가 내려주는 사유(예: 현재 비밀번호 불일치)를 우선 표시한다
+      const serverMessage = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      showToast(serverMessage ?? '비밀번호 변경 중 오류가 발생했습니다.', 'error');
     } finally {
       setIsChangingPw(false);
     }
