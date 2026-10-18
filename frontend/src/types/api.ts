@@ -74,6 +74,7 @@ export interface CustomSplitItem {
 export interface CreateExpenseRequest {
   total_amount: number;
   category_id: string;
+  paid_by?: string;
   date: string;
   description?: string | null;
   split_type: SplitType;
@@ -84,6 +85,7 @@ export interface CreateExpenseRequest {
 export interface UpdateExpenseRequest {
   total_amount?: number;
   category_id?: string;
+  paid_by?: string;
   date?: string;
   description?: string | null;
   split_type?: SplitType;
@@ -169,7 +171,7 @@ export interface MessageListApiResponse {
 export interface CategoryResponse {
   id: string;
   name: string;
-  type: 'SYSTEM' | 'GROUP';
+  scope: 'SYSTEM' | 'GROUP';
   group_id: string | null;
 }
 

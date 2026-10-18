@@ -2,6 +2,7 @@ import { createExpense, updateExpense, deleteExpense } from '../../src/services/
 import { deleteCategory } from '../../src/services/category.service';
 import * as expenseRepo from '../../src/repositories/expense.repository';
 import * as categoryRepo from '../../src/repositories/category.repository';
+import * as groupRepo from '../../src/repositories/group.repository';
 import {
   ValidationError,
   ForbiddenError,
@@ -10,9 +11,20 @@ import {
 
 jest.mock('../../src/repositories/expense.repository');
 jest.mock('../../src/repositories/category.repository');
+jest.mock('../../src/repositories/group.repository');
 
 const mockExpenseRepo = expenseRepo as jest.Mocked<typeof expenseRepo>;
 const mockCategoryRepo = categoryRepo as jest.Mocked<typeof categoryRepo>;
+const mockGroupRepo = groupRepo as jest.Mocked<typeof groupRepo>;
+
+const groupMembers = ['user-a', 'user-b', 'user-c'].map((user_id, i) => ({
+  id: `m${i}`,
+  group_id: 'grp-uuid',
+  user_id,
+  role: 'MEMBER' as const,
+  joined_at: new Date().toISOString(),
+  username: user_id,
+}));
 
 const mockCategory = {
   id: 'cat-uuid',
@@ -39,7 +51,10 @@ const mockExpense = {
   ],
 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockGroupRepo.findGroupMembers.mockResolvedValue(groupMembers);
+});
 
 describe('expense.service — createExpense EQUAL (BE-19, AC-ES1)', () => {
   it('10,000원 3명 EQUAL: paidBy 3,334 / 나머지 각 3,333', async () => {
@@ -90,6 +105,64 @@ describe('expense.service — createExpense EQUAL (BE-19, AC-ES1)', () => {
     const splitsArg = mockExpenseRepo.createExpenseSplits.mock.calls[0][0];
     const userIds = splitsArg.map((s) => s.user_id);
     expect(userIds).toContain('user-a');
+  });
+
+  it('결제자를 입력자와 다른 멤버로 지정해 등록할 수 있다 (created_by는 입력자)', async () => {
+    mockCategoryRepo.findCategoryById.mockResolvedValue(mockCategory);
+    mockExpenseRepo.createExpense.mockResolvedValue({
+      ...mockExpense,
+      splits: undefined,
+    } as unknown as typeof mockExpense);
+    mockExpenseRepo.createExpenseSplits.mockResolvedValue([] as unknown as ReturnType<typeof mockExpenseRepo.createExpenseSplits> extends Promise<infer T> ? T : never);
+
+    await createExpense('user-a', {
+      group_id: 'grp-uuid',
+      category_id: 'cat-uuid',
+      paid_by: 'user-b',
+      total_amount: 10000,
+      split_type: 'EQUAL',
+      date: '2026-06-15',
+      participants: ['user-a', 'user-b'],
+    });
+
+    expect(mockExpenseRepo.createExpense).toHaveBeenCalledWith(
+      expect.objectContaining({ paid_by: 'user-b', created_by: 'user-a' }),
+    );
+    const splitsArg = mockExpenseRepo.createExpenseSplits.mock.calls[0][0];
+    expect(splitsArg.find((s) => s.user_id === 'user-b')?.amount).toBe(5000);
+  });
+
+  it('그룹 멤버가 아닌 결제자는 ValidationError', async () => {
+    mockCategoryRepo.findCategoryById.mockResolvedValue(mockCategory);
+
+    await expect(
+      createExpense('user-a', {
+        group_id: 'grp-uuid',
+        category_id: 'cat-uuid',
+        paid_by: 'outsider',
+        total_amount: 10000,
+        split_type: 'EQUAL',
+        date: '2026-06-15',
+        participants: ['user-a'],
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(mockExpenseRepo.createExpense).not.toHaveBeenCalled();
+  });
+
+  it('그룹 멤버가 아닌 참여자가 있으면 ValidationError', async () => {
+    mockCategoryRepo.findCategoryById.mockResolvedValue(mockCategory);
+
+    await expect(
+      createExpense('user-a', {
+        group_id: 'grp-uuid',
+        category_id: 'cat-uuid',
+        paid_by: 'user-a',
+        total_amount: 10000,
+        split_type: 'EQUAL',
+        date: '2026-06-15',
+        participants: ['user-a', 'outsider'],
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 
   it('존재하지 않는 카테고리 시 NotFoundError', async () => {
@@ -153,6 +226,13 @@ describe('expense.service — createExpense CUSTOM (BE-19, AC-ES3)', () => {
 });
 
 describe('expense.service — deleteExpense (BE-21)', () => {
+  it('MEMBER는 결제자가 본인이어도 타인이 입력한 지출은 삭제할 수 없다 (created_by 기준)', async () => {
+    mockExpenseRepo.findExpenseById.mockResolvedValue({ ...mockExpense, paid_by: 'user-b', created_by: 'user-a' });
+    await expect(
+      deleteExpense('exp-uuid', 'grp-uuid', 'user-b', 'MEMBER'),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
   it('MEMBER가 타인 지출 삭제 시도 시 ForbiddenError', async () => {
     mockExpenseRepo.findExpenseById.mockResolvedValue(mockExpense);
     await expect(
@@ -182,6 +262,33 @@ describe('expense.service — category.service SYSTEM 삭제 (BE-18, AC-C1)', ()
 });
 
 describe('expense.service — updateExpense (BE-21)', () => {
+  it('MEMBER는 결제자가 본인이어도 타인이 입력한 지출은 수정할 수 없다 (created_by 기준)', async () => {
+    mockExpenseRepo.findExpenseById.mockResolvedValue({ ...mockExpense, paid_by: 'user-b', created_by: 'user-a' });
+
+    await expect(
+      updateExpense('exp-uuid', 'grp-uuid', 'user-b', 'MEMBER', { total_amount: 5000 }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('MEMBER가 결제자가 타인이어도 본인이 입력한 지출은 수정할 수 있다 (created_by 기준)', async () => {
+    const own = { ...mockExpense, paid_by: 'user-b', created_by: 'user-a' };
+    mockExpenseRepo.findExpenseById.mockResolvedValue(own);
+    mockExpenseRepo.updateExpense.mockResolvedValue(own);
+
+    await updateExpense('exp-uuid', 'grp-uuid', 'user-a', 'MEMBER', { description: '수정' });
+
+    expect(mockExpenseRepo.updateExpense).toHaveBeenCalledWith('exp-uuid', { description: '수정' });
+  });
+
+  it('그룹 멤버가 아닌 결제자로 변경하면 ValidationError', async () => {
+    mockExpenseRepo.findExpenseById.mockResolvedValue(mockExpense);
+
+    await expect(
+      updateExpense('exp-uuid', 'grp-uuid', 'user-a', 'MEMBER', { paid_by: 'outsider' }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(mockExpenseRepo.updateExpense).not.toHaveBeenCalled();
+  });
+
   it('MEMBER가 타인 지출 수정 시도 시 ForbiddenError', async () => {
     mockExpenseRepo.findExpenseById.mockResolvedValue(mockExpense);
 

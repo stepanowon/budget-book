@@ -106,6 +106,7 @@ export default function ExpenseForm({
     const data: CreateExpenseRequest = {
       total_amount: parsedTotal,
       category_id: categoryId,
+      paid_by: paidBy,
       date,
       description: description || null,
       split_type: splitType,

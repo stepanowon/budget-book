@@ -1,6 +1,6 @@
 # 도메인 정의서 — 공동 가계부 서비스
 
-> 버전: 1.5  
+> 버전: 1.6  
 > 작성일: 2026-06-18  
 > 수정일: 2026-10-18  
 > 관련 문서: [2-prd.md](2-prd.md) · [3-user-scenario.md](3-user-scenario.md) · [4-project-principle.md](4-project-principle.md) · [5-arch-diagram.md](5-arch-diagram.md)
@@ -87,7 +87,7 @@
 | 403 | 권한 없음 | MEMBER가 정산 실행, SYSTEM 카테고리 삭제 시도 |
 | 404 | 리소스 없음 | 존재하지 않는 그룹·지출 조회 |
 | 409 | 중복 충돌 | username 중복 가입, 이미 멤버인 사용자 초대 |
-| 422 | 검증 실패 | 금액 범위 초과, `end_date < start_date` |
+| 422 | 검증 실패 | 금액 범위 초과, `end_date < start_date`, 그룹 멤버가 아닌 결제자·참여자 지정, 비활성 그룹에 대한 변경 요청 |
 
 ---
 
@@ -168,7 +168,7 @@
 | 역할 | 권한 |
 |------|------|
 | `MANAGER` | 그룹 정보 수정, 멤버 초대/제거, 정산 실행, 카테고리 추가/삭제, 그룹 비활성화 |
-| `MEMBER` | 지출 입력·수정·삭제(본인이 결제자로 등록한 지출 한정), 지출 조회, 차트·정산 내역 조회 |
+| `MEMBER` | 지출 입력·수정·삭제(본인이 입력한 지출 한정), 지출 조회, 차트·정산 내역 조회 |
 
 **MANAGER 이양 규칙**
 - `MANAGER`가 서비스를 탈퇴하면, 해당 그룹에서 `joined_at` 기준으로 가장 먼저 가입한 활성 멤버(`User.status = active`이며 `GroupMember` 레코드 존재)에게 `MANAGER` 권한이 자동 이양된다.
@@ -518,4 +518,5 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 | 1.2 | 2026-06-18 | (1) BR-15 신설: 정산 후 Expense 수정·삭제 허용 및 정산 결과 불변 명세; AC-EX1·EX2 추가. (2) 값 중복 제거: 섹션 5에서 비밀번호·금액·시간대를 섹션 2 참조로 전환, 엔티티 표 중복 제거. (3) 검증 공백 보강: 전 AC 표에 검증 규칙 ID 컬럼 추가; Category(AC-C1~C3)·Message(AC-M1·M2) AC 신설; AC-S3 SettlementDetail 레코드 수 명세; AC-I5 배치 SLA(1시간) 추가; 에러 코드 규약(2.4) 신설; 추적 매트릭스에 검증 AC 컬럼 추가 | stepanowon |
 | 1.3 | 2026-06-18 | 7. 기술 제약표에 언어(한국어 단독, v1) 및 통화(KRW 단독, v1) 항목 추가 — PRD 11.1과 일관성 맞춤 | stepanowon |
 | 1.4 | 2026-06-18 | Invitation 엔티티 3.4 섹션: invitee_username → invitee_id(UUID FK → User.id) 변경. 초대 발송 시 username으로 사용자 조회 후 id 저장 | stepanowon |
+| 1.6 | 2026-10-18 | 결제자 선택 기능 연결에 맞춰 MEMBER 지출 수정·삭제 기준을 입력자(`created_by`)로 되돌림, 422 사례에 그룹 멤버가 아닌 결제자·참여자 및 비활성 그룹 변경 요청 추가 | stepanowon |
 | 1.5 | 2026-10-18 | 코드 동기화 — 이메일 인증 v1 미구현 명시, MEMBER 지출 수정·삭제 기준을 결제자로 정정, CUSTOM 분담의 총액 입력·합계 일치 규칙 정정, AC-ES2를 400으로 정정, AC-S3·AC-M1의 대상을 그룹 멤버로 정정, Expense.date 검증 범위 정정, 초대 요청 입력 필드 명확화, DB 접근 방식(postgres.js) 보충 | stepanowon |

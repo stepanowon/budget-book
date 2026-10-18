@@ -1,6 +1,6 @@
 # ERD (Entity Relationship Diagram) — 공동 가계부 서비스
 
-> 버전: 1.4
+> 버전: 1.5
 > 작성일: 2026-06-18
 > 수정일: 2026-10-18
 > 관련 문서: 1-domain-definition.md · 2-prd.md · 5-arch-diagram.md
@@ -457,7 +457,7 @@ User와 Group은 `group_members` 테이블을 통해 다대다 관계를 맺는�
 | 역할 | 권한 범위 |
 |------|----------|
 | `MANAGER` | 그룹 정보 수정, 멤버 초대·제거, 정산 실행, 카테고리 추가·삭제, 그룹 비활성화 |
-| `MEMBER` | 지출 입력·수정·삭제(본인이 결제자로 등록한 지출 한정), 지출 조회, 차트·정산 내역 조회 |
+| `MEMBER` | 지출 입력·수정·삭제(본인이 입력한 지출 한정, `created_by` 기준), 지출 조회, 차트·정산 내역 조회 |
 
 `groups.created_by`는 최초 생성자를 추적하기 위한 참조이며, 실제 MANAGER 권한은 `group_members.role`로 관리된다. 그룹 생성자는 자동으로 `MANAGER`로 `group_members`에 등록된다.
 
@@ -555,3 +555,4 @@ PENDING ──▶ ACCEPTED   (초대받은 사용자가 수락, AC-I4)
 | 1.2 | 2026-06-18 | invitations.invitee_username → invitee_id(uuid FK) 변경 — API 구현 중 username 저장 대신 user_id FK로 정규화 결정 | stepanowon |
 | 1.3 | 2026-10-18 | 코드·schema.sql 동기화 — refresh_tokens 엔티티(2.11) 추가, PostgreSQL ENUM 타입 사용 명시, users.username·groups.name·categories(name, scope/group_id)·invitations.expires_at CHECK 제약 반영, DR-03을 DB CHECK로 정정, 인덱스·DB 함수 절(2.12) 추가, 메시지 본문을 실제 구현(안내 문구+기간)으로 정정, 초대 만료 배치 30분 주기·responded_at 미기록 현황 반영, MEMBER 지출 수정·삭제 기준을 결제자로 정정 | stepanowon |
 | 1.4 | 2026-10-18 | DB 함수 3종(expire_pending_invitations, transfer_manager_or_deactivate_group, delete_group_category)을 schema.sql 6절에 추가하고 2.12절의 "정의 없음" 안내를 갱신 | stepanowon |
+| 1.5 | 2026-10-18 | MEMBER 지출 수정·삭제 기준을 입력자(`created_by`)로 정정 (결제자 선택 기능 연결) | stepanowon |

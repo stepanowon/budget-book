@@ -3,6 +3,7 @@ import { AMOUNT_MIN, AMOUNT_MAX } from '../constants/expense';
 
 export const createExpenseSchema = z.object({
   category_id: z.string().uuid('유효한 카테고리 ID여야 합니다.'),
+  paid_by: z.string().uuid('유효한 결제자 ID여야 합니다.').optional(),
   total_amount: z
     .number()
     .int('금액은 정수여야 합니다.')

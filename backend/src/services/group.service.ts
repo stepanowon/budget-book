@@ -9,7 +9,7 @@ import {
 } from '../middlewares/errorHandler.middleware';
 import { ROLE, INVITATION_STATUS } from '../constants/roles';
 import { INVITATION_EXPIRE_DAYS } from '../constants/expense';
-import { Group, GroupMember, Invitation } from '../types/domain';
+import { Group, Invitation } from '../types/domain';
 
 // 그룹 생성 (BE-14)
 export async function createGroup(

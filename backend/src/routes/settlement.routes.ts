@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { requireGroupMember, requireGroupManager } from '../middlewares/role.middleware';
+import {
+  requireGroupMember,
+  requireGroupManager,
+  requireActiveGroup,
+} from '../middlewares/role.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
 import { createSettlementSchema } from '../validators/settlement.schema';
 import * as settlementController from '../controllers/settlement.controller';
@@ -14,6 +18,7 @@ router.post(
   authenticate,
   requireGroupMember,
   requireGroupManager,
+  requireActiveGroup,
   validateBody(createSettlementSchema),
   settlementController.createSettlement,
 );

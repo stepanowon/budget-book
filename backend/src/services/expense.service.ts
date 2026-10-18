@@ -1,5 +1,6 @@
 import * as expenseRepo from '../repositories/expense.repository';
 import * as categoryRepo from '../repositories/category.repository';
+import * as groupRepo from '../repositories/group.repository';
 import { calculateEqualSplit, validateCustomSplit } from '../utils/splitCalculator';
 import {
   NotFoundError,
@@ -55,6 +56,17 @@ function calcSplits(
   return validated.map((s) => ({ user_id: s.userId, amount: s.amount }));
 }
 
+// 결제자·참여자·분담 대상은 모두 해당 그룹의 멤버여야 한다
+async function assertGroupMembers(groupId: string, userIds: Array<string | undefined>): Promise<void> {
+  const ids = Array.from(new Set(userIds.filter((id): id is string => Boolean(id))));
+  if (ids.length === 0) return;
+  const members = await groupRepo.findGroupMembers(groupId);
+  const memberIds = new Set(members.map((m) => m.user_id));
+  if (ids.some((id) => !memberIds.has(id))) {
+    throw new ValidationError('그룹 멤버가 아닌 사용자가 포함되어 있습니다.');
+  }
+}
+
 export async function createExpense(
   _userId: string,
   params: CreateExpenseParams,
@@ -64,6 +76,12 @@ export async function createExpense(
   if (category.scope === 'GROUP' && category.group_id !== params.group_id) {
     throw new ValidationError('해당 그룹의 카테고리가 아닙니다.');
   }
+
+  await assertGroupMembers(params.group_id, [
+    params.paid_by,
+    ...(params.participants ?? []),
+    ...(params.splits ?? []).map((s) => s.user_id),
+  ]);
 
   const splitResults = calcSplits(
     params.total_amount,
@@ -126,9 +144,15 @@ export async function updateExpense(
   if (!expense) throw new NotFoundError('지출을 찾을 수 없습니다.');
   if (expense.group_id !== groupId) throw new ForbiddenError('접근 권한이 없습니다.');
 
-  if (groupRole === 'MEMBER' && expense.paid_by !== userId) {
+  if (groupRole === 'MEMBER' && expense.created_by !== userId) {
     throw new ForbiddenError('본인이 등록한 지출만 수정할 수 있습니다.');
   }
+
+  await assertGroupMembers(groupId, [
+    params.paid_by,
+    ...(params.participants ?? []),
+    ...(params.splits ?? []).map((s) => s.user_id),
+  ]);
 
   const updateData: Partial<{
     category_id: string;
@@ -188,7 +212,7 @@ export async function deleteExpense(
   if (!expense) throw new NotFoundError('지출을 찾을 수 없습니다.');
   if (expense.group_id !== groupId) throw new ForbiddenError('접근 권한이 없습니다.');
 
-  if (groupRole === 'MEMBER' && expense.paid_by !== userId) {
+  if (groupRole === 'MEMBER' && expense.created_by !== userId) {
     throw new ForbiddenError('본인이 등록한 지출만 삭제할 수 있습니다.');
   }
 

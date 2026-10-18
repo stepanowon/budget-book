@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { requireGroupMember } from '../middlewares/role.middleware';
+import { requireGroupMember, requireActiveGroup } from '../middlewares/role.middleware';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware';
 import {
   createExpenseSchema,
@@ -15,6 +15,7 @@ router.post(
   '/',
   authenticate,
   requireGroupMember,
+  requireActiveGroup,
   validateBody(createExpenseSchema),
   expenseController.createExpense,
 );
@@ -30,9 +31,16 @@ router.patch(
   '/:expenseId',
   authenticate,
   requireGroupMember,
+  requireActiveGroup,
   validateBody(updateExpenseSchema),
   expenseController.updateExpense,
 );
-router.delete('/:expenseId', authenticate, requireGroupMember, expenseController.deleteExpense);
+router.delete(
+  '/:expenseId',
+  authenticate,
+  requireGroupMember,
+  requireActiveGroup,
+  expenseController.deleteExpense,
+);
 
 export default router;

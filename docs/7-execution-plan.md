@@ -336,7 +336,7 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 
 **완료 조건**
 - [x] username 형식 위반 시 400 INVALID_INPUT 반환
-- [ ] 금액 범위 초과(0원, 10억원 이상) 시 422 VALIDATION_FAILED 반환 (현재 zod 4 이슈의 origin 미반영으로 400 INVALID_INPUT 반환 — 미해결)
+- [x] 금액 범위 초과(0원, 10억원 이상) 시 422 VALIDATION_FAILED 반환
 - [x] end_date < start_date 시 422 반환 (AC-G2, AC-S1)
 - [x] 컨트롤러 진입 전 검증 완료, 컨트롤러에 검증된 데이터만 도달
 
@@ -491,7 +491,7 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 순서대
 - [x] EQUAL 10,000원 3명 저장 시 ExpenseSplit 레코드 3,334/3,333/3,333원으로 생성 (AC-ES1)
 - [x] CUSTOM 분담 합산 불일치 시 422 반환 (AC-ES3)
 - [x] paid_by가 participants에 없어도 ExpenseSplit에 자동 포함 (BR-06)
-- [ ] 금액 범위 위반 시 422 반환 (현재 400 INVALID_INPUT 반환 — 338과 동일 원인)
+- [x] 금액 범위 위반 시 422 반환
 - [x] 그룹 비멤버 접근 시 403 반환
 - [ ] Expense와 ExpenseSplit이 단일 트랜잭션으로 저장 (현재 INSERT가 개별 쿼리로 실행됨)
 
@@ -517,7 +517,7 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 순서대
 > 복잡도: `M` | 의존성: BE-20
 
 **완료 조건**
-- [x] MEMBER가 본인이 결제자(paid_by)인 지출 수정/삭제 성공
+- [x] MEMBER가 본인이 입력한(created_by) 지출 수정/삭제 성공
 - [x] MEMBER가 타인 작성 지출 수정/삭제 시도 시 403 반환
 - [x] 정산 완료 기간 지출 수정 후 Settlement/SettlementDetail 불변 (AC-EX1)
 - [x] 정산 완료 기간 지출 삭제 후 Settlement/SettlementDetail 불변 (AC-EX2)
@@ -932,7 +932,7 @@ Settlement, SettlementDetail, Message 생성을 순서대로 생성한다(명시
 
 ---
 
-### FE-23. 카테고리 API 클라이언트 및 카테고리 관리 화면 구현  ← 화면·라우트는 구현되었으나 그룹 화면에서 이동하는 링크가 없음 (URL 직접 진입)
+### FE-23. 카테고리 API 클라이언트 및 카테고리 관리 화면 구현
 > 복잡도: `M` | 의존성: FE-07, FE-03, FE-04
 
 **완료 조건**

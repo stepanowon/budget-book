@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { requireGroupMember, requireGroupManager } from '../middlewares/role.middleware';
+import {
+  requireGroupMember,
+  requireGroupManager,
+  requireActiveGroup,
+} from '../middlewares/role.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
 import { createCategorySchema } from '../validators/category.schema';
 import * as categoryController from '../controllers/category.controller';
@@ -13,6 +17,7 @@ router.post(
   authenticate,
   requireGroupMember,
   requireGroupManager,
+  requireActiveGroup,
   validateBody(createCategorySchema),
   categoryController.createGroupCategory,
 );
@@ -21,6 +26,7 @@ router.delete(
   authenticate,
   requireGroupMember,
   requireGroupManager,
+  requireActiveGroup,
   categoryController.deleteCategory,
 );
 

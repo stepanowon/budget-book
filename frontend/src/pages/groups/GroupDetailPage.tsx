@@ -39,7 +39,14 @@ export default function GroupDetailPage() {
   const matchExpensesExact = useMatch('/groups/:groupId/expenses');
   const matchExpensesDeep = useMatch('/groups/:groupId/expenses/*');
   const matchSettlement = useMatch('/groups/:groupId/settlements');
-  const activeTab = (matchExpensesExact || matchExpensesDeep) ? 'expenses' : matchSettlement ? 'settlement' : 'info';
+  const matchCategories = useMatch('/groups/:groupId/categories');
+  const activeTab = (matchExpensesExact || matchExpensesDeep)
+    ? 'expenses'
+    : matchSettlement
+      ? 'settlement'
+      : matchCategories
+        ? 'categories'
+        : 'info';
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
@@ -122,6 +129,7 @@ export default function GroupDetailPage() {
     { key: 'info', label: '정보', to: ROUTES.GROUP_DETAIL(id) },
     { key: 'expenses', label: '지출', to: ROUTES.GROUP_EXPENSES(id) },
     { key: 'settlement', label: '정산', to: ROUTES.GROUP_SETTLEMENTS(id) },
+    { key: 'categories', label: '카테고리', to: ROUTES.GROUP_CATEGORIES(id) },
   ] as const;
 
   return (

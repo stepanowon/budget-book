@@ -1,7 +1,6 @@
 import * as settlementRepo from '../repositories/settlement.repository';
 import * as expenseRepo from '../repositories/expense.repository';
 import * as groupRepo from '../repositories/group.repository';
-import { kstDateToPeriodStartUtc, kstDateToPeriodEndUtc } from '../utils/dateUtils';
 import { NotFoundError, ForbiddenError } from '../middlewares/errorHandler.middleware';
 
 // 정산 실행 (BE-22)
@@ -11,9 +10,6 @@ export async function createSettlement(params: {
   period_end: string;   // KST YYYY-MM-DD
   created_by: string;
 }) {
-  const periodStartUtc = kstDateToPeriodStartUtc(params.period_start);
-  const periodEndUtc = kstDateToPeriodEndUtc(params.period_end);
-
   // 정산 레코드 생성 (period_start/end는 date 타입이므로 원본 날짜 문자열 사용)
   const settlement = await settlementRepo.createSettlement({
     group_id: params.group_id,

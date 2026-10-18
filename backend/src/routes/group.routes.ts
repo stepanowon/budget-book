@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware';
-import { requireGroupMember, requireGroupManager } from '../middlewares/role.middleware';
+import {
+  requireGroupMember,
+  requireGroupManager,
+  requireActiveGroup,
+} from '../middlewares/role.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
 import { createGroupSchema, updateGroupSchema } from '../validators/group.schema';
 import { sendInvitationSchema, respondInvitationSchema } from '../validators/invitation.schema';
@@ -21,6 +25,7 @@ router.patch(
   authenticate,
   requireGroupMember,
   requireGroupManager,
+  requireActiveGroup,
   validateBody(updateGroupSchema),
   groupController.updateGroup,
 );
@@ -38,6 +43,7 @@ router.post(
   authenticate,
   requireGroupMember,
   requireGroupManager,
+  requireActiveGroup,
   validateBody(sendInvitationSchema),
   groupController.sendInvitation,
 );
@@ -60,6 +66,7 @@ router.delete(
   authenticate,
   requireGroupMember,
   requireGroupManager,
+  requireActiveGroup,
   groupController.removeGroupMember,
 );
 

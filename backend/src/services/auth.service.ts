@@ -139,7 +139,7 @@ export async function changePassword(
   console.info('[AUTH] Password changed', { userId });
 }
 
-export async function withdraw(userId: string, refreshToken: string): Promise<void> {
+export async function withdraw(userId: string): Promise<void> {
   // 모든 소속 그룹에서 MANAGER 이양 처리 (DB 함수 호출)
   const memberships = await sql`SELECT group_id FROM group_members WHERE user_id = ${userId}`;
 

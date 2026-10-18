@@ -17,13 +17,12 @@ export function validateBody(schema: ZodSchema) {
 
       // 422 vs 400 구분:
       // - custom 이슈(날짜 순서, 비즈니스 규칙) → 422
-      // - 숫자형 too_small/too_big (금액 범위 등) → 422
-      // - 문자열 형식/길이 오류 → 400
+      // - 숫자형 too_small/too_big (금액 범위 등) → 422 (zod 4는 이슈의 대상 타입을 origin으로 제공)
+      // - 문자열·배열 형식/길이 오류 → 400
       const hasValidationError = issues.some(
         (e) =>
           e.code === 'custom' ||
-          ((e.code === 'too_small' || e.code === 'too_big') &&
-            (e as { type?: string }).type === 'number'),
+          ((e.code === 'too_small' || e.code === 'too_big') && e.origin === 'number'),
       );
 
       const statusCode = hasValidationError

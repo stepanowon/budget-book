@@ -102,7 +102,7 @@ describe('auth.service — withdraw (BE-13)', () => {
     mockUserRepo.deactivateUser.mockResolvedValue(undefined);
     mockTokenRepo.deleteAllUserRefreshTokens.mockResolvedValue();
 
-    await expect(withdraw('user-uuid-123', 'some-token')).resolves.toBeUndefined();
+    await expect(withdraw('user-uuid-123')).resolves.toBeUndefined();
     expect(mockUserRepo.deactivateUser).toHaveBeenCalledWith('user-uuid-123');
     expect(mockTokenRepo.deleteAllUserRefreshTokens).toHaveBeenCalledWith('user-uuid-123');
   });
@@ -116,7 +116,7 @@ describe('auth.service — withdraw (BE-13)', () => {
     mockUserRepo.deactivateUser.mockResolvedValue(undefined);
     mockTokenRepo.deleteAllUserRefreshTokens.mockResolvedValue();
 
-    await expect(withdraw('user-uuid-123', 'some-token')).resolves.toBeUndefined();
+    await expect(withdraw('user-uuid-123')).resolves.toBeUndefined();
     // sql 호출: 1(memberships) + 2(transfer each) = 3
     expect(sql).toHaveBeenCalledTimes(3);
     expect(mockUserRepo.deactivateUser).toHaveBeenCalledWith('user-uuid-123');

@@ -764,7 +764,7 @@
       "post": {
         "tags": ["Expenses"],
         "summary": "지출 등록",
-        "description": "지출을 등록하고 분담 내역(ExpenseSplit)을 생성한다.\n\n- 결제자(`paid_by`)는 로그인 사용자로 자동 설정된다\n- `EQUAL`: 금액을 참여자 수로 균등 분배\n- `CUSTOM`: `custom_splits`의 합산이 `total_amount`와 일치해야 함\n- Expense와 ExpenseSplit은 순서대로 저장된다(명시적 DB 트랜잭션 없음)",
+        "description": "지출을 등록하고 분담 내역(ExpenseSplit)을 생성한다.\n\n- 결제자(`paid_by`)는 선택 항목이며 생략하면 로그인 사용자로 설정된다. 결제자·참여자·`custom_splits`의 사용자는 모두 그룹 멤버여야 한다(아니면 422)\n- 입력자(`created_by`)는 항상 로그인 사용자이다\n- 비활성 그룹에서는 등록할 수 없다(422)\n- `EQUAL`: 금액을 참여자 수로 균등 분배\n- `CUSTOM`: `custom_splits`의 합산이 `total_amount`와 일치해야 함\n- Expense와 ExpenseSplit은 순서대로 저장된다(명시적 DB 트랜잭션 없음)",
         "requestBody": {
           "required": true,
           "content": {
@@ -857,7 +857,7 @@
       "patch": {
         "tags": ["Expenses"],
         "summary": "지출 수정",
-        "description": "MEMBER는 본인이 결제자(`paid_by`)인 지출만 수정할 수 있으며, MANAGER는 그룹 내 모든 지출을 수정할 수 있다. 수정 시 ExpenseSplit이 재계산된다.",
+        "description": "MEMBER는 본인이 입력한 지출(`created_by`)만 수정할 수 있으며, MANAGER는 그룹 내 모든 지출을 수정할 수 있다. 결제자(`paid_by`)도 변경할 수 있고 그룹 멤버여야 한다. 수정 시 ExpenseSplit이 재계산된다. 비활성 그룹에서는 수정할 수 없다(422).",
         "requestBody": {
           "required": true,
           "content": {
@@ -1616,6 +1616,7 @@
             "example": 30000
           },
           "category_id": { "type": "string", "format": "uuid" },
+          "paid_by": { "type": "string", "format": "uuid", "description": "결제자(그룹 멤버). 생략하면 로그인 사용자" },
           "date": {
             "type": "string",
             "format": "date",
@@ -1655,6 +1656,7 @@
         "properties": {
           "total_amount":   { "type": "integer", "minimum": 1, "maximum": 999999999 },
           "category_id":    { "type": "string", "format": "uuid" },
+          "paid_by":        { "type": "string", "format": "uuid", "description": "결제자(그룹 멤버)" },
           "date":           { "type": "string", "format": "date" },
           "description":    { "type": "string", "maxLength": 200, "nullable": true },
           "split_type":     { "type": "string", "enum": ["EQUAL", "CUSTOM"] },
@@ -1886,7 +1888,7 @@
         }
       },
       "ValidationFailed": {
-        "description": "입력 값 검증 실패",
+        "description": "입력 값 검증 실패 — 금액 범위 위반, 날짜 순서 오류, 그룹 멤버가 아닌 사용자 지정, 비활성 그룹에 대한 변경 요청 등",
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorResponse" },

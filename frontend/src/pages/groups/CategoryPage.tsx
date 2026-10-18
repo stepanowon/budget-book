@@ -98,15 +98,15 @@ export default function CategoryPage() {
                 <span className="text-sm text-[#202124]">{cat.name}</span>
                 <span
                   className={`inline-flex items-center h-[22px] px-2.5 rounded-pill text-xs font-medium whitespace-nowrap ${
-                    cat.type === 'SYSTEM'
+                    cat.scope === 'SYSTEM'
                       ? 'bg-border text-neutral'
                       : 'bg-primary-light text-primary'
                   }`}
                 >
-                  {cat.type === 'SYSTEM' ? 'SYSTEM' : 'GROUP'}
+                  {cat.scope === 'SYSTEM' ? 'SYSTEM' : 'GROUP'}
                 </span>
               </div>
-              {isManager && cat.type === 'GROUP' && (
+              {isManager && cat.scope === 'GROUP' && (
                 <button
                   className={btnDangerSm}
                   onClick={() => setDeletingCategory(cat)}

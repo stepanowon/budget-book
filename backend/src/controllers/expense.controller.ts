@@ -13,7 +13,7 @@ export async function createExpense(
     const expense = await expenseService.createExpense(req.user!.id, {
       group_id: req.params.groupId,
       category_id: body.category_id,
-      paid_by: req.user!.id,
+      paid_by: body.paid_by ?? req.user!.id,
       total_amount: body.total_amount,
       split_type: body.split_type,
       description: body.description,
@@ -84,6 +84,7 @@ export async function updateExpense(
       {
         category_id: body.category_id,
         total_amount: body.total_amount,
+        paid_by: body.paid_by,
         split_type: body.split_type,
         description: body.description,
         date: body.date,

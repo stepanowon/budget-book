@@ -72,8 +72,7 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
 export async function withdraw(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.id;
-    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE] ?? '';
-    await authService.withdraw(userId, refreshToken);
+    await authService.withdraw(userId);
     res.clearCookie(REFRESH_TOKEN_COOKIE);
     res.status(HTTP_STATUS.OK).json({ success: true, data: { message: '탈퇴가 완료되었습니다.' } });
   } catch (err) {

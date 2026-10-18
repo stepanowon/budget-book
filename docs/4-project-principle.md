@@ -1,6 +1,6 @@
 # 프로젝트 구조 설계 원칙 — 공동 가계부 서비스
 
-> 버전: 1.3
+> 버전: 1.4
 > 작성일: 2026-06-18
 > 수정일: 2026-10-18
 > 관련 문서: 1-domain-definition.md · 2-prd.md · 3-user-scenario.md · 5-arch-diagram.md
@@ -878,7 +878,7 @@ backend/
 │   │
 │   ├── middlewares/               # Express 미들웨어 (공통 횡단 관심사)
 │   │   ├── auth.middleware.ts     # JWT 파싱·서명 검증, req.user 주입
-│   │   ├── role.middleware.ts     # 그룹 내 MANAGER/MEMBER role 서버사이드 확인
+│   │   ├── role.middleware.ts     # 그룹 내 MANAGER/MEMBER role 서버사이드 확인, 비활성 그룹 쓰기 차단(requireActiveGroup)
 │   │   ├── validate.middleware.ts # 요청 바디·쿼리 스키마 검증 (zod)
 │   │   └── errorHandler.middleware.ts  # 전역 에러 포착, 표준 에러 응답 반환
 │   │
@@ -992,3 +992,4 @@ export async function findExpensesByGroup(groupId: string) {
 | 1.1 | 2026-06-18 | (1) 백엔드 라이브러리 초기화 위치: `src/lib/supabase.ts` → `src/lib/db.ts` (postgres.js 기반 DB 연결 풀, max 10). (2) API 엔드포인트 명세에 엑셀 내보내기 추가. (3) Swagger UI 엔드포인트 추가 (섹션 5.6). | stepanowon |
 | 1.2 | 2026-06-19 | (1) 섹션 3.4 API 엔드포인트에 `PATCH /auth/password` 추가. (2) 섹션 3.6·5.1 환경변수 예시를 실제 구현(`DATABASE_URL`, `CORS_ORIGIN`)에 맞게 수정 (Supabase SDK 환경변수 제거). | stepanowon |
 | 1.3 | 2026-10-18 | 코드 동기화 — (1) 에러 코드명을 실제(`FORBIDDEN`, `NOT_FOUND`)로 정정. (2) FE/BE 디렉터리 구조를 실제 파일 기준으로 갱신(layouts·contexts·validators·jobs·report 계층, 제거된 파일 삭제, 마이그레이션 폴더 → `database/schema.sql`). (3) 남아 있던 Supabase 클라이언트 서술을 postgres.js 기준으로 정정. (4) Access Token 저장 방식을 실제 구현(localStorage)으로 정정, Refresh Token 쿠키 속성·회전 반영. (5) API 엔드포인트 표를 전체 라우트 기준으로 보강. (6) 환경변수 검증·CORS·미들웨어 순서 예시를 실제 코드로 교체, 로깅·커버리지·Prettier 현황 명시, 머리말 버전을 변경 이력과 일치. | stepanowon |
+| 1.4 | 2026-10-18 | role.middleware.ts 설명에 비활성 그룹 쓰기 차단(requireActiveGroup) 추가 | stepanowon |
