@@ -82,6 +82,21 @@ CREATE TABLE IF NOT EXISTS users (
         CHECK (username ~ '^[a-z0-9_]{3,20}$') -- 3~20자, 영문 소문자·숫자·밑줄만 (DR-01)
 );
 
+-- ── refresh_tokens ─────────────────────────────────────────
+-- 로그인 시 발급한 Refresh Token 저장소. 로그아웃·탈퇴 시 삭제 (회원 삭제 시 CASCADE).
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id         UUID         NOT NULL DEFAULT gen_random_uuid(),
+    user_id    UUID         NOT NULL,
+    token      TEXT         NOT NULL,
+    expires_at TIMESTAMPTZ  NOT NULL,
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_refresh_tokens PRIMARY KEY (id),
+    CONSTRAINT uq_refresh_tokens_token UNIQUE (token),
+    CONSTRAINT fk_refresh_tokens_user_id
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
 -- ── groups ─────────────────────────────────────────────────
 -- 공동 지출 관리 단위. LIMITED(기간 한정)와 UNLIMITED(상시) 두 타입 지원 (BR-02).
 -- 그룹도 소프트 삭제(status='inactive')만 사용하며 물리 삭제 없음.
