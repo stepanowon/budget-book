@@ -9,11 +9,11 @@
 
 **https://budget-book-fe.vercel.app**
 
-| 계정 | 역할 | 패스워드 |
-|------|------|----------|
-| user1@test.com | MANAGER (관리자) | asdf!2345 |
-| user2@test.com | MEMBER | asdf!2345 |
-| user3@test.com | MEMBER | asdf!2345 |
+| 계정 | username | 역할 | 패스워드 |
+|------|----------|------|----------|
+| user1@test.com | manager | MANAGER (관리자) | asdf!2345 |
+| user2@test.com | user2 | MEMBER | asdf!2345 |
+| user3@test.com | user3 | MEMBER | asdf!2345 |
 
 `user1@test.com`으로 로그인한 후 그룹 목록에서 **남미여행** 그룹을 선택하면 지출 기록, 정산, 리포트 등 주요 기능을 바로 테스트해볼 수 있습니다.
 
@@ -49,10 +49,11 @@
 | [사용자 시나리오](docs/3-user-scenario.md) | 페르소나별 16개 시나리오 (주요 흐름 + 예외 흐름) |
 | [프로젝트 구조 설계 원칙](docs/4-project-principle.md) | 레이어 구조, 네이밍 컨벤션, 테스트 전략, FE/BE 디렉토리 구조 |
 | [아키텍처 다이어그램](docs/5-arch-diagram.md) | 시스템 구성, 인증 흐름, 정산 흐름, 초대 상태 전이 (Mermaid) |
-| [ERD](docs/6-erd.md) | 10개 엔티티 관계도, 속성·제약·FK 전략, 주요 관계 설명 |
-| [실행 계획](docs/7-execution-plan.md) | DB·BE·FE 79개 태스크, 체크박스형 완료 조건 및 의존성, 5단계 구현 순서 |
+| [ERD](docs/6-erd.md) | 11개 엔티티 관계도, 속성·제약·FK 전략, 주요 관계 설명 |
+| [실행 계획](docs/7-execution-plan.md) | DB·BE·FE 74개 태스크, 체크박스형 완료 조건 및 의존성, 5단계 구현 순서 |
 | [와이어프레임](docs/8-wireframe.md) | 전체 화면 구조, ASCII 와이어프레임, 권한별 UI 차이, 공통 컴포넌트 명세 |
-| [Swagger 명세](swagger/swagger.json) | OpenAPI 3.0 REST API 명세 — 31개 엔드포인트, 스키마, 인증, 에러 응답 |
+| [스타일 가이드](docs/9-style-guide.md) | 색상·타이포그래피·공통 컴포넌트 명세, 레이아웃과 반응형 규칙 |
+| [Swagger 명세](swagger/swagger.json) | OpenAPI 3.0 REST API 명세 — 35개 엔드포인트, 스키마, 인증, 에러 응답 |
 
 ---
 

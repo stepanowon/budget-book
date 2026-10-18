@@ -1,7 +1,8 @@
 # 실행 계획 — 공동 가계부 서비스
 
-> 버전: 1.0  
+> 버전: 1.1  
 > 작성일: 2026-06-18  
+> 수정일: 2026-10-18  
 > 관련 문서: 1-domain-definition.md · 2-prd.md · 4-project-principle.md · 6-erd.md
 
 ---
@@ -40,9 +41,9 @@
 | 도메인 | 태스크 수 | S | M | L |
 |--------|---------|---|---|---|
 | DB | 14개 | 10 | 3 | 1 |
-| BE | 30개 | 9 | 15 | 6 |
-| FE | 30개 | 12 | 14 | 4 |
-| **합계** | **74개** | **31** | **32** | **11** |
+| BE | 30개 | 8 | 18 | 4 |
+| FE | 30개 | 13 | 16 | 1 |
+| **합계** | **74개** | **31** | **37** | **6** |
 
 ---
 
@@ -84,7 +85,7 @@ pgcrypto 익스텐션과 7개 ENUM 타입을 idempotent하게 생성한다.
 - [x] refresh_tokens 테이블 생성 완료 (id, user_id FK→users.id ON DELETE CASCADE, token, expires_at, created_at)
 - [x] UNIQUE(token) 제약으로 토큰 중복 저장 차단 확인
 - [x] user_id ON DELETE CASCADE 동작 확인 — users 레코드 삭제(inactive 전환이 아닌 테스트용) 시 토큰 자동 삭제
-- [x] expires_at 인덱스 생성하여 만료 토큰 조회 최적화 확인
+- [ ] expires_at 인덱스 생성하여 만료 토큰 조회 최적화 확인 (database/schema.sql에 refresh_tokens.expires_at 인덱스 없음 — UNIQUE(token)만 존재)
 
 **참조 규칙**: BR-12, NFR-SEC01, NFR-SEC07, AC-U3, AC-U4
 
@@ -179,61 +180,61 @@ SYSTEM이면 group_id IS NULL, GROUP이면 group_id IS NOT NULL 제약을 DB 레
 
 ---
 
-### DB-17. 초대 만료 배치 처리 — PENDING → EXPIRED 전환
+### DB-17. 초대 만료 배치 처리 — PENDING → EXPIRED 전환  ← 함수 정의가 database/schema.sql에 없음 (코드는 expire_pending_invitations() 호출)
 > 복잡도: `M` | 의존성: DB-08
 
 expires_at이 현재 시각 이전인 PENDING 초대를 EXPIRED로 일괄 전환한다. NFR-A04(1시간 이내 처리)를 만족해야 한다.
 
 **완료 조건**
-- [x] expires_at이 지난 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
-- [x] 배치 실행 주기 최대 30분 간격으로 설정
-- [x] 이미 최종 상태(ACCEPTED/DECLINED/EXPIRED)인 초대는 영향받지 않음
-- [x] 배치 실행 결과(전환 건수, 실행 시각)가 로그로 기록
+- [ ] expires_at이 지난 PENDING 초대가 1시간 이내에 EXPIRED로 전환 (AC-I5, NFR-A04)
+- [ ] 배치 실행 주기 최대 30분 간격으로 설정
+- [ ] 이미 최종 상태(ACCEPTED/DECLINED/EXPIRED)인 초대는 영향받지 않음
+- [ ] 배치 실행 결과(전환 건수, 실행 시각)가 로그로 기록
 
 **참조 규칙**: BR-03, AC-I5, NFR-A04
 
 ---
 
-### DB-18. DB 함수 — MANAGER 권한 이양 및 그룹 비활성화
+### DB-18. DB 함수 — MANAGER 권한 이양 및 그룹 비활성화  ← 함수 정의가 database/schema.sql에 없음 (코드는 transfer_manager_or_deactivate_group() 호출)
 > 복잡도: `L` | 의존성: DB-04, DB-02
 
 transfer_manager_or_deactivate_group 함수를 구현하여 MANAGER 탈퇴 시 권한 이양 또는 그룹 비활성화를 트랜잭션으로 처리한다.
 
 **완료 조건**
-- [x] MANAGER 탈퇴 시 joined_at 기준 최선임 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
-- [x] 활성 MEMBER가 없으면 그룹이 inactive로 전환 (AC-GM2)
-- [x] MEMBER 탈퇴 시 group_members 레코드만 삭제 (AC-GM3)
-- [x] 동시 탈퇴 시나리오에서 트랜잭션 격리로 중복 MANAGER 승격 방지
+- [ ] MANAGER 탈퇴 시 joined_at 기준 최선임 활성 MEMBER가 MANAGER로 승격 (AC-GM1)
+- [ ] 활성 MEMBER가 없으면 그룹이 inactive로 전환 (AC-GM2)
+- [ ] MEMBER 탈퇴 시 group_members 레코드만 삭제 (AC-GM3)
+- [ ] 동시 탈퇴 시나리오에서 트랜잭션 격리로 중복 MANAGER 승격 방지
 
 **참조 규칙**: BR-13, BR-14, BR-12, AC-GM1, AC-GM2, AC-GM3
 
 ---
 
-### DB-19. DB 함수 — GROUP 카테고리 삭제 및 지출 재분류
+### DB-19. DB 함수 — GROUP 카테고리 삭제 및 지출 재분류  ← 함수 정의가 database/schema.sql에 없음 (코드는 delete_group_category() 호출)
 > 복잡도: `M` | 의존성: DB-05, DB-06, DB-10
 
 delete_group_category 함수: 트랜잭션 내에서 지출을 '기타'로 UPDATE한 후 카테고리를 DELETE한다.
 
 **완료 조건**
-- [x] GROUP 카테고리 삭제 시 해당 카테고리 지출이 '기타'로 재분류 (AC-C2)
-- [x] 사용 중인 지출이 없는 GROUP 카테고리도 정상 삭제 (AC-C3)
-- [x] SYSTEM 카테고리에 대해 함수 호출 시 예외 발생 (AC-C1)
-- [x] UPDATE와 DELETE가 하나의 트랜잭션 내에서 원자적으로 처리
+- [ ] GROUP 카테고리 삭제 시 해당 카테고리 지출이 '기타'로 재분류 (AC-C2)
+- [ ] 사용 중인 지출이 없는 GROUP 카테고리도 정상 삭제 (AC-C3)
+- [ ] SYSTEM 카테고리에 대해 함수 호출 시 예외 발생 (AC-C1)
+- [ ] UPDATE와 DELETE가 하나의 트랜잭션 내에서 원자적으로 처리
 
 **참조 규칙**: BR-10, BR-11, AC-C1, AC-C2, AC-C3
 
 ---
 
-### DB-20. 마이그레이션 관리 체계 수립
+### DB-20. 마이그레이션 관리 체계 수립  ← 실제로는 마이그레이션 도구 없이 database/schema.sql 단일 파일을 수동 적용
 > 복잡도: `M` | 의존성: DB-01 ~ DB-19 전체
 
 Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 체계 수립.
 
 **완료 조건**
-- [x] supabase db status로 마이그레이션 이력 정상 추적
-- [x] supabase db reset으로 전체 스키마가 idempotent하게 재구성
-- [x] 마이그레이션 파일 순서가 의존성(테이블→인덱스→시드→함수→RLS)을 준수
-- [x] 로컬 환경과 원격 Supabase 프로젝트에 동일한 마이그레이션 적용 가능
+- [ ] supabase db status로 마이그레이션 이력 정상 추적
+- [ ] supabase db reset으로 전체 스키마가 idempotent하게 재구성
+- [ ] 마이그레이션 파일 순서가 의존성(테이블→인덱스→시드→함수→RLS)을 준수
+- [ ] 로컬 환경과 원격 Supabase 프로젝트에 동일한 마이그레이션 적용 가능
 
 ---
 
@@ -282,7 +283,7 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 > 복잡도: `M` | 의존성: BE-01
 
 **완료 조건**
-- [x] Supabase CLI로 마이그레이션 적용 시 모든 테이블이 오류 없이 생성
+- [ ] Supabase CLI로 마이그레이션 적용 시 모든 테이블이 오류 없이 생성
 - [x] SYSTEM 카테고리 7개가 categories 테이블에 정확히 삽입
 - [x] 복합 UNIQUE 제약 3개가 DB 레벨에 선언
 - [x] balance 계산 방식(GENERATED COLUMN or 애플리케이션) 결정 및 문서화
@@ -335,7 +336,7 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 
 **완료 조건**
 - [x] username 형식 위반 시 400 INVALID_INPUT 반환
-- [x] 금액 범위 초과(0원, 10억원 이상) 시 422 VALIDATION_FAILED 반환
+- [ ] 금액 범위 초과(0원, 10억원 이상) 시 422 VALIDATION_FAILED 반환 (현재 zod 4 이슈의 origin 미반영으로 400 INVALID_INPUT 반환 — 미해결)
 - [x] end_date < start_date 시 422 반환 (AC-G2, AC-S1)
 - [x] 컨트롤러 진입 전 검증 완료, 컨트롤러에 검증된 데이터만 도달
 
@@ -364,7 +365,7 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 - [x] 유효한 자격증명으로 가입 시 201 반환, status=active (AC-U1)
 - [x] 중복 username 가입 시도 시 409 DUPLICATE_RESOURCE 반환 (AC-U2)
 - [x] 중복 email 가입 시도 시 409 반환
-- [x] 비밀번호 규칙 위반 시 422 반환
+- [x] 비밀번호 규칙 위반 시 400 INVALID_INPUT 반환
 - [x] 응답에 비밀번호 해시가 포함되지 않음
 
 **참조 규칙**: FR-U01, DR-01, 도메인 2.1, NFR-SEC02, AC-U1, AC-U2
@@ -401,7 +402,7 @@ Supabase CLI 기반 타임스탬프 마이그레이션 파일 구성 및 관리 
 ### BE-13. 인증 API — 회원 탈퇴
 > 복잡도: `L` | 의존성: BE-12
 
-MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 트랜잭션으로 처리한다.
+MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 순서대로 처리한다(명시적 DB 트랜잭션 없음, 권한 이양은 DB 함수).
 
 **완료 조건**
 - [x] 탈퇴 후 해당 사용자의 Refresh Token이 DB에서 모두 삭제 (FR-U04, NFR-SEC07)
@@ -434,7 +435,7 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 **완료 조건**
 - [x] 그룹 멤버만 GET /groups/:groupId 조회 가능, 비멤버는 403
 - [x] MEMBER의 PATCH/DELETE 시도 시 403 반환
-- [x] PATCH에서 LIMITED 타입 end_date < start_date 수정 시 422 반환
+- [ ] PATCH에서 LIMITED 타입 end_date < start_date 수정 시 422 반환 (미구현 — updateGroupSchema에 날짜 순서 검증 없음)
 - [x] DELETE 후 group.status=inactive, 기존 지출 데이터 보존
 
 **참조 규칙**: FR-G04, FR-G05, BR-14, DR-03
@@ -476,7 +477,7 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 - [x] SYSTEM 카테고리 삭제 시도 시 403 반환 (AC-C1, BR-10)
 - [x] GROUP 카테고리 삭제 시 해당 카테고리 사용 Expense가 '기타'로 재분류 (AC-C2)
 - [x] 사용 중인 지출 없는 GROUP 카테고리 삭제 시 카테고리만 삭제 (AC-C3)
-- [x] 삭제와 재분류가 단일 트랜잭션으로 처리
+- [ ] 삭제와 재분류가 단일 트랜잭션으로 처리 (DB 함수 delete_group_category에 의존, 함수 정의는 schema.sql에 없음)
 - [x] MEMBER의 추가/삭제 시도 시 403 반환
 
 **참조 규칙**: FR-C01, FR-C02, FR-C03, FR-C04, BR-10, BR-11, AC-C1, AC-C2, AC-C3
@@ -490,9 +491,9 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 - [x] EQUAL 10,000원 3명 저장 시 ExpenseSplit 레코드 3,334/3,333/3,333원으로 생성 (AC-ES1)
 - [x] CUSTOM 분담 합산 불일치 시 422 반환 (AC-ES3)
 - [x] paid_by가 participants에 없어도 ExpenseSplit에 자동 포함 (BR-06)
-- [x] 금액 범위 위반 시 422 반환
+- [ ] 금액 범위 위반 시 422 반환 (현재 400 INVALID_INPUT 반환 — 338과 동일 원인)
 - [x] 그룹 비멤버 접근 시 403 반환
-- [x] Expense와 ExpenseSplit이 단일 트랜잭션으로 저장
+- [ ] Expense와 ExpenseSplit이 단일 트랜잭션으로 저장 (현재 INSERT가 개별 쿼리로 실행됨)
 
 **참조 규칙**: FR-E01, FR-E02, FR-E03, FR-E04, BR-05, BR-06, DR-04, AC-ES1, AC-ES3
 
@@ -516,11 +517,11 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 > 복잡도: `M` | 의존성: BE-20
 
 **완료 조건**
-- [x] MEMBER가 본인 작성 지출 수정/삭제 성공
+- [x] MEMBER가 본인이 결제자(paid_by)인 지출 수정/삭제 성공
 - [x] MEMBER가 타인 작성 지출 수정/삭제 시도 시 403 반환
 - [x] 정산 완료 기간 지출 수정 후 Settlement/SettlementDetail 불변 (AC-EX1)
 - [x] 정산 완료 기간 지출 삭제 후 Settlement/SettlementDetail 불변 (AC-EX2)
-- [x] 수정 시 ExpenseSplit 재계산이 트랜잭션으로 처리
+- [ ] 수정 시 ExpenseSplit 재계산이 트랜잭션으로 처리 (현재 개별 쿼리로 처리)
 
 **참조 규칙**: FR-E06, FR-E07, BR-15, AC-EX1, AC-EX2
 
@@ -529,13 +530,13 @@ MANAGER 권한 이양, 그룹 비활성화, Refresh Token 무효화를 단일 �
 ### BE-22. 정산 API — 정산 실행 및 메시지 발송
 > 복잡도: `L` | 의존성: BE-07, BE-09, BE-21
 
-Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리한다.
+Settlement, SettlementDetail, Message 생성을 순서대로 생성한다(명시적 DB 트랜잭션 없음).
 
 **완료 조건**
 - [x] MEMBER의 정산 실행 시도 시 403 반환 (AC-S2)
 - [x] period_start > period_end 시 422 반환 (AC-S1)
 - [x] 정산 후 SettlementDetail의 balance = total_paid - total_share (DR-06)
-- [x] 지출 0건 기간 정산 시 활성 멤버 수만큼 SettlementDetail 생성, 모두 balance=0 (AC-S3)
+- [x] 지출 0건 기간 정산 시 그룹 멤버 수만큼 SettlementDetail 생성, 모두 balance=0 (AC-S3)
 - [x] 정산 완료 후 활성 멤버 전원에게 Message 레코드 생성 (AC-M1)
 - [x] 재정산 시 기존 Settlement 레코드 불변, 새 레코드 생성 (FR-S04)
 
@@ -662,7 +663,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 
 ---
 
-### FE-02. React Router v6 라우터 설정 및 보호 라우트 구현
+### FE-02. React Router v7 라우터 설정 및 보호 라우트 구현
 > 복잡도: `S` | 의존성: FE-01
 
 **완료 조건**
@@ -681,7 +682,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 - [x] 요청 인터셉터에서 Access Token 자동 주입 구현
 - [x] 401 응답 시 /auth/refresh 호출 후 원본 요청 재시도 로직 구현
 - [x] 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
-- [x] localStorage에 Access Token 저장 금지 (메모리 또는 sessionStorage 사용)
+- [x] Access Token은 lib/tokenStore.ts를 통해 localStorage(access_token)에 저장 (메모리 저장 방식은 향후 과제)
 
 **참조 규칙**: NFR-SEC01
 
@@ -855,7 +856,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `S` | 의존성: FE-15, FE-16
 
 **완료 조건**
-- [x] username 검색 입력 및 검색 결과 표시 UI 구현
+- [x] username 입력 및 초대 전송 UI 구현 (검색 결과 표시는 없음)
 - [x] 초대 발송 성공 시 성공 토스트 또는 인라인 메시지 표시
 - [x] 409, 404 에러별 구체적인 안내 메시지 표시
 - [x] MANAGER 역할이 아닌 사용자에게 초대 발송 UI 미노출
@@ -931,7 +932,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 
 ---
 
-### FE-23. 카테고리 API 클라이언트 및 카테고리 관리 화면 구현
+### FE-23. 카테고리 API 클라이언트 및 카테고리 관리 화면 구현  ← 화면·라우트는 구현되었으나 그룹 화면에서 이동하는 링크가 없음 (URL 직접 진입)
 > 복잡도: `M` | 의존성: FE-07, FE-03, FE-04
 
 **완료 조건**
@@ -966,7 +967,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 - [x] 종료일 < 시작일 조건의 클라이언트 사이드 검증
 - [x] MANAGER 역할이 아닌 사용자에게 정산 실행 버튼 미노출
 - [x] 정산 실행 중 로딩 상태 및 중복 제출 방지
-- [x] 정산 성공 후 결과 화면 자동 이동
+- [x] 정산 성공 후 정산 결과 영역으로 스크롤 (별도 화면 이동 없음)
 
 **참조 규칙**: FR-S01, FR-S06
 
@@ -976,7 +977,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 > 복잡도: `M` | 의존성: FE-07, FE-24
 
 **완료 조건**
-- [x] 정산 목록에 기간, 실행일, 총 지출 금액 표시
+- [x] 정산 목록에 기간, 실행일 표시 (총 지출 금액은 표시하지 않음)
 - [x] 정산 상세에서 멤버별 결제액/분담액/차액을 표 형태로 표시
 - [x] 차액 양수/음수를 색상(접근성 대비 고려) 및 텍스트('받을 금액'/'낼 금액')로 구분
 - [x] 정산 내역이 없는 경우 '아직 정산 내역이 없습니다' 빈 상태 표시
@@ -991,7 +992,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 
 **완료 조건**
 - [x] messageApi.ts에 getMessages 함수 구현
-- [x] 메시지 목록에서 각 메시지의 그룹명, 정산 기간, 차액 표시
+- [x] 메시지 목록에서 각 메시지의 내용(정산 완료 안내), 정산 기간, 정산일 표시 (그룹명·차액은 표시하지 않음)
 - [x] 차액 양수/음수를 텍스트로 명확히 구분
 - [x] 메시지가 없는 경우 empty state UI 표시
 - [x] 헤더에 읽지 않은 메시지 배지(count) 표시
@@ -1021,7 +1022,7 @@ Settlement, SettlementDetail, Message 생성을 단일 트랜잭션으로 처리
 - [x] 지출 내역 엑셀 파일에 날짜, 카테고리, 금액, 결제자, 설명 컬럼 포함
 - [x] 정산 금액 엑셀 파일에 멤버별 결제액, 분담액, 차액 컬럼 포함
 - [x] 다운로드 중 로딩 상태 표시
-- [x] 파일명에 그룹명과 날짜 범위 포함
+- [x] 지출 엑셀 파일명에 그룹명과 날짜 범위 포함 (정산 엑셀은 정산결과_{settlementId}.xlsx)
 
 **참조 규칙**: FR-R03, FR-R04
 

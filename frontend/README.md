@@ -99,10 +99,13 @@ npm run dev
 | 로그인 | `/login` | 이메일 + 비밀번호 로그인 |
 | 회원가입 | `/signup` | 이메일·비밀번호·username 등록 |
 | 그룹 목록 | `/groups` | 내가 소속된 그룹 카드 목록 |
-| 그룹 상세 | `/groups/:id` | 지출 목록·카테고리·멤버·정산 탭 |
-| 지출 등록/수정 | `/groups/:id/expenses/new` | 균등(N빵)/개별 분담 입력 폼 |
+| 그룹 생성 | `/groups/new` | 그룹 이름·유형·기간 입력 |
+| 그룹 상세 | `/groups/:id` | 정보(멤버·초대)·지출·정산 탭 |
+| 지출 목록 | `/groups/:id/expenses` | 기본 조회 기간은 그룹 시작일~종료일 |
+| 지출 등록/수정 | `/groups/:id/expenses/new`, `/groups/:id/expenses/:expenseId/edit` | 균등(N빵)/개별 분담 입력 폼 |
+| 카테고리 | `/groups/:id/categories` | 그룹 카테고리 관리 (현재 화면 내 진입 링크 없음) |
 | 정산 | `/groups/:id/settlements` | 정산 실행·내역·엑셀 내보내기 |
-| 리포트 | `/reports` | 카테고리·멤버별 파이 차트, PDF/엑셀 내보내기 |
+| 리포트 | `/reports` | 카테고리·멤버별 파이 차트, PDF 내보내기 (엑셀은 지출 목록·정산 상세에서 제공) |
 | 초대함 | `/invitations` | 수신 초대 목록, 수락/거절 |
 | 메시지 | `/messages` | 정산 완료 인앱 메시지 목록 |
 | 계정 설정 | `/settings/withdraw` | 비밀번호 변경, 회원 탈퇴 |

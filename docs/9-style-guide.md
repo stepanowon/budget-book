@@ -1,7 +1,8 @@
 # 프론트엔드 스타일 가이드 — 공동 가계부 서비스
 
-> 버전: 1.0
+> 버전: 1.2
 > 작성일: 2026-06-18
+> 수정일: 2026-10-18
 > 참고 디자인: Google Calendar (Material Design 3 기반 클린 UI)
 > 관련 문서: 4-project-principle.md · 8-wireframe.md
 
@@ -92,9 +93,10 @@ Google Calendar는 **Google Sans / Roboto** 계열의 명료한 sans-serif를 �
 ### 3.1 폰트 스택
 
 ```css
-font-family: 'Pretendard', 'Google Sans', 'Roboto', -apple-system,
-  BlinkMacSystemFont, 'Segoe UI', sans-serif;
+font-family: 'Pretendard', sans-serif;
 ```
+
+> 구현: `tailwind.config.js`의 `fontFamily.sans`와 `index.css`의 `body`가 위 값을 사용하고, Pretendard는 `index.css`의 CDN `@import`로 불러온다.
 
 ### 3.2 타입 스케일
 
@@ -220,10 +222,12 @@ color: #ffffff;
 
 ### 5.2 Input / Form
 
+> 구현: `components/common/Input.tsx`는 Tailwind 클래스로 구현되며 아래 값과 다른 부분은 다음과 같다. 높이 44px(`h-11`), 레이블 13px/500/`#202124`, 포커스는 `border-primary` + `ring-2 ring-primary-light`, 에러는 `border-danger bg-danger-light`, 에러 메시지는 `role="alert"`.
+
 ```css
 /* 기본 입력 필드 */
 .input {
-  height: 40px;
+  height: 44px;
   padding: 0 12px;
   border: 1px solid #dadce0;
   border-radius: 4px;
@@ -249,9 +253,9 @@ color: #ffffff;
 
 /* 레이블 */
 .label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #5f6368;
+  color: #202124;
   margin-bottom: 4px;
 }
 
@@ -264,6 +268,8 @@ color: #ffffff;
 ```
 
 ### 5.3 Card
+
+> 구현: 공통 `Card` 컴포넌트는 없다. `GroupCard`, `ExpenseCard` 등 각 도메인 컴포넌트가 Tailwind 클래스로 카드 스타일을 개별 적용한다. 아래는 디자인 기준이다.
 
 ```css
 .card {
@@ -289,6 +295,8 @@ color: #ffffff;
 ### 5.4 Chip / Badge (카테고리 태그)
 
 Google Calendar의 이벤트 바 스타일을 chip에 응용한다.
+
+> 구현: `components/expenses/CategoryChip.tsx`는 카테고리 색상(`CATEGORY_COLORS`)을 **연한 배경(색상 + 투명도 `22`) + 색상 글자**로 표시하고, `inline-flex items-center px-2.5 py-0.5 rounded-xl text-xs font-medium` 클래스를 사용한다(미등록 카테고리 기본색 `#9e9e9e`). 아래의 흰 글자 + 진한 배경은 초기 디자인 기준이다.
 
 ```css
 .chip {
@@ -344,6 +352,9 @@ Google Calendar의 이벤트 바 스타일을 chip에 응용한다.
 
 ```css
 /* Google Calendar의 이벤트 상세 팝업 스타일 참고 */
+/* 구현(Modal.tsx): min-width 320px / max-width 90vw / max-height 90vh, shadow 0 8px 24px rgba(0,0,0,.2),
+   헤더 px-6 pt-6 pb-4 + 하단 경계, 푸터 px-6 py-4 + 상단 경계, 오버레이 bg-black/40 z-[1000],
+   제목 18px/500. 포털 렌더링, 포커스 트랩, ESC 닫기, role="dialog" aria-modal 지원. 폭은 내용에 따라 달라진다(480px 고정 아님). */
 .modal-overlay {
   background: rgba(0,0,0,.4);
   backdrop-filter: none; /* 성능 우선 */
@@ -378,23 +389,24 @@ Google Calendar의 이벤트 바 스타일을 chip에 응용한다.
 Google Calendar 상단 헤더와 동일한 구조를 적용한다.
 
 ```
-높이: 64px
+높이: 56px (h-14, 모든 해상도 동일)
 배경: #ffffff
-하단 경계: 1px solid #e0e0e0 또는 box-shadow: 0 1px 2px rgba(0,0,0,.1)
-좌측: 햄버거 메뉴 아이콘 + 서비스 로고/명칭
-중앙: 현재 그룹명 (모바일에서 생략)
-우측: 검색 아이콘, 알림 아이콘, 프로필 아바타
+하단 경계: 1px solid #dadce0
+좌측: 서비스 로고/명칭 (모바일에서는 햄버거 메뉴 버튼 추가)
+중앙(데스크톱): 가로 내비게이션 — 그룹 목록 · 초대함 · 보고서
+우측: 메시지(알림 벨 + 배지) · 계정 설정 · 로그아웃
 ```
 
-### 5.8 Sidebar (데스크톱)
+> 이전 설계(64px 헤더, 중앙 그룹명, 검색·프로필 아바타)는 구현하지 않았다.
+
+### 5.8 Sidebar / 모바일 드로어
+
+> 구현: 데스크톱 고정 사이드바(256px/72px)는 구현하지 않았다. 데스크톱은 5.7의 헤더 가로 내비게이션을 사용하고, 모바일(md 미만)은 햄버거 버튼으로 여는 **좌측 드로어**를 사용한다.
 
 ```
-너비: 256px (확장) / 72px (축소)
+너비: 260px (모바일 드로어)
 배경: #ffffff
-우측 경계: 1px solid #e0e0e0
-내부 패딩: 8px
-메뉴 아이템 높이: 40px, border-radius: 20px (pill)
-활성 메뉴 아이템 배경: #e8f0fe, 색상: #1a73e8
+메뉴 아이템 활성 배경: bg-primary-light (#e8f0fe), 색상: #1a73e8
 비활성 텍스트: #202124
 ```
 
@@ -402,10 +414,11 @@ Google Calendar 상단 헤더와 동일한 구조를 적용한다.
 
 ```css
 /* Google Calendar의 원형 인디케이터 */
+/* 구현(LoadingSpinner.tsx): size prop sm(16px) / md(24px, 기본) / lg(40px), 트랙 색 #dadce0, role="status" */
 .spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #f1f3f4;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #dadce0;
   border-top-color: #1a73e8;
   border-radius: 50%;
   animation: spin 700ms linear infinite;
@@ -419,10 +432,10 @@ Google Calendar 상단 헤더와 동일한 구조를 적용한다.
 목록이 비었을 때 중앙 정렬로 아이콘 + 설명 + CTA를 표시한다.
 
 ```
-아이콘: 128×128px, color #dadce0
-제목: 18px, #5f6368
-설명: 14px, #9aa0a6
-CTA 버튼: Filled Primary
+아이콘: 48px (text-5xl), color #dadce0
+제목: 18px/500, #202124
+설명: 14px, #5f6368
+CTA 버튼: primary 배경 버튼 (EmptyState 내부에서 직접 렌더링)
 ```
 
 ---
@@ -434,9 +447,12 @@ CTA 버튼: Filled Primary
 - 라이브러리: **lucide-react** (Google Calendar의 Material Icons와 유사한 스타일)
 - 크기: 20px (헤더 액션), 18px (목록 내 아이콘), 16px (chip 내 아이콘)
 - 색상: 컨텍스트에 따라 `#5f6368` (기본) / `#1a73e8` (활성) / `#d93025` (삭제)
-- 클릭 영역: 최소 40×40px (터치 대응)
+- 클릭 영역: 최소 44×44px (터치 대응)
+- 현재 아이콘은 `lucide-react`를 `AppLayout`(알림 벨, 설정, 로그아웃, 메뉴) 등에서 사용하며, Modal·Toast의 닫기 버튼은 `✕` 문자를 사용한다.
 
 ### 아바타 (멤버, 프로필)
+
+> 구현 현황: 아바타 컴포넌트는 아직 구현되지 않았다(헤더에도 프로필 아바타 없음). 아래는 향후 구현 시의 디자인 기준이다.
 
 Google Calendar의 우상단 프로필 원형 아바타와 동일하게 처리한다.
 
@@ -478,21 +494,18 @@ Google Calendar의 우상단 프로필 원형 아바타와 동일하게 처리�
 
 ### 7.1 전체 레이아웃
 
-Google Calendar의 사이드바 + 메인 영역 구조를 그대로 차용한다.
+헤더 + 메인 영역 구조이며, `layouts/AppLayout.tsx` 하나로 구현한다.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  AppHeader (height: 64px, z-index: 100)             │
-├──────────────┬──────────────────────────────────────┤
-│              │                                      │
-│  Sidebar     │   Main Content Area                  │
-│  (256px)     │   - max-width: 1200px                │
-│              │   - padding: 24px 32px               │
-│  (모바일:    │   - overflow-y: auto                  │
-│   숨김/      │                                      │
-│   드로어)    │                                      │
-│              │                                      │
-└──────────────┴──────────────────────────────────────┘
+│  Header (height: 56px) — 로고 · 가로 내비 · 메시지/설정/로그아웃 │
+├─────────────────────────────────────────────────────┤
+│   Main Content Area                                 │
+│   - max-width: 1200px (그룹 상세 등은 더 좁게)      │
+│   - padding: 16px (md 이상 24px 32px)               │
+│                                                     │
+│   (모바일: 햄버거 버튼 → 좌측 드로어로 내비 표시)  │
+└─────────────────────────────────────────────────────┘
 ```
 
 ### 7.2 페이지별 레이아웃 패턴
@@ -539,15 +552,15 @@ transition: opacity 200ms ease, transform 200ms ease;
 ### 8.2 Toast / Snackbar
 
 ```
-위치: 화면 좌측 하단 (또는 우측 하단)
-최소 너비: 288px
+위치: 화면 우측 하단 (fixed bottom-6 right-6)
+최소 너비: 240px
 최대 너비: 400px
-height: 48px
-border-radius: 4px
-배경: #202124  (어두운 배경 — Google Calendar 스타일)
-텍스트: #ffffff, 14px
-자동 소멸: 4초
-액션 버튼 (선택): #8ab4f8 (밝은 파란색)
+높이: 내용에 따라 (px-4 py-3)
+border-radius: 8px (Tailwind rounded)
+유형별 밝은 배경: success(bg-success-light) / error(bg-danger-light) / info(bg-primary-light), 유형색 테두리·글자
+닫기 버튼(✕) 포함, 액션 버튼 없음
+자동 소멸: 4초 (ToastContext 전달값, 컴포넌트 기본 3초)
+aria-live="polite"
 ```
 
 ### 8.3 상태별 UI 표현
@@ -583,16 +596,15 @@ border-radius: 4px
 ## 9. 반응형 브레이크포인트
 
 ```
-Mobile   : < 768px  → 사이드바 숨김(드로어), 단열 레이아웃
-Tablet   : 768px ~ 1024px → 사이드바 축소(아이콘), 2열 그리드
-Desktop  : > 1024px → 사이드바 확장(256px), 3열 그리드
-Wide     : > 1440px → 콘텐츠 max-width 1200px 제한
+Mobile   : < 768px  → 내비게이션 드로어(햄버거), 단열 레이아웃
+Desktop  : ≥ 768px (Tailwind md) → 헤더 가로 내비게이션, 콘텐츠 max-width 1200px 제한
+(별도의 Tablet/Wide 브레이크포인트 분기는 구현하지 않음)
 ```
 
 ### 모바일 전용 조정
 
-- 헤더 높이: 56px (64px → 56px)
-- 하단 내비게이션 바 추가 (탭 바, 높이 56px): 그룹 · 지출 · 정산 · 메시지
+- 헤더 높이: 56px (데스크톱과 동일)
+- 하단 내비게이션 바(탭 바)는 구현하지 않음 — 햄버거 드로어로 대체
 - 카드 좌우 패딩: 16px → 12px
 - 테이블 → 카드 목록으로 대체 (복잡한 테이블은 모바일에서 스크롤 허용)
 
@@ -636,6 +648,8 @@ export default {
 ```
 
 ### 10.2 CSS 변수 (선택사항: 추가 커스터마이징 시)
+
+> 현황: 아래 CSS 변수는 정의되어 있지 않고 사용하지도 않는다. 간격·레이아웃은 Tailwind 유틸리티로 처리한다. (`layouts/AppLayout.css`, `AuthLayout.css`가 `var(--...)`를 참조하지만 어디에서도 import되지 않는 미사용 파일이다.) `rounded`는 `tailwind.config.js`에서 8px(`DEFAULT`)로 재정의되어 있어 컴포넌트의 모서리 반경은 4px이 아니라 8px이다.
 
 `src/index.css` 또는 `src/styles/variables.css`에 추가 정의 가능.
 
@@ -693,5 +707,6 @@ export default {
 
 | 버전 | 일자 | 변경 내용 | 작성자 |
 |------|------|----------|--------|
+| 1.2 | 2026-10-18 | 코드 동기화 — 폰트 스택, Input(44px·레이블)·Modal·Toast(우측 하단 밝은 배경)·LoadingSpinner·EmptyState·Chip 실제 구현값 반영, 헤더(56px)·내비게이션(가로 내비+모바일 드로어)·브레이크포인트(md 단일) 정정, 미구현(공통 Card, 데스크톱 사이드바, 하단 탭 바, 아바타, CSS 변수) 현황 명시, 머리말 버전을 변경 이력과 일치 | stepanowon |
 | 1.1 | 2026-06-19 | 섹션 10 업데이트: CSS 변수 정의 → Tailwind CSS v3 설정. tailwind.config.js 실제 설정값 반영 (colors extend, borderRadius 추가). 10.2 CSS 변수 섹션은 선택사항으로 변경. 10.3 Tailwind 클래스 사용 예 추가 | stepanowon |
 | 1.0 | 2026-06-18 | 최초 작성 — Google Calendar 디자인 기반 스타일 가이드 | stepanowon |

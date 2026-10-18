@@ -1,7 +1,8 @@
 # 도메인 정의서 — 공동 가계부 서비스
 
-> 버전: 1.4  
+> 버전: 1.5  
 > 작성일: 2026-06-18  
+> 수정일: 2026-10-18  
 > 관련 문서: [2-prd.md](2-prd.md) · [3-user-scenario.md](3-user-scenario.md) · [4-project-principle.md](4-project-principle.md) · [5-arch-diagram.md](5-arch-diagram.md)
 
 ---
@@ -45,7 +46,7 @@
 | 항목 | 정책 |
 |------|------|
 | 로그인 방식 | 이메일 + 비밀번호 |
-| 이메일 검증 | 가입 시 인증 메일 발송, 검증 완료 전 서비스 이용 불가 |
+| 이메일 검증 | v1 미구현 — 가입 시 인증 메일을 발송하지 않으며, 가입 즉시 `active` 상태로 이용 가능 (이메일 인증은 향후 과제) |
 | 비밀번호 규칙 | 8자 이상, 영문·숫자·특수문자 각 1자 이상 포함 |
 | 세션 방식 | JWT (Access Token + Refresh Token) |
 | Access Token 만료 | 1시간 |
@@ -167,7 +168,7 @@
 | 역할 | 권한 |
 |------|------|
 | `MANAGER` | 그룹 정보 수정, 멤버 초대/제거, 정산 실행, 카테고리 추가/삭제, 그룹 비활성화 |
-| `MEMBER` | 지출 입력·수정·삭제(본인 작성 한정), 지출 조회, 차트·정산 내역 조회 |
+| `MEMBER` | 지출 입력·수정·삭제(본인이 결제자로 등록한 지출 한정), 지출 조회, 차트·정산 내역 조회 |
 
 **MANAGER 이양 규칙**
 - `MANAGER`가 서비스를 탈퇴하면, 해당 그룹에서 `joined_at` 기준으로 가장 먼저 가입한 활성 멤버(`User.status = active`이며 `GroupMember` 레코드 존재)에게 `MANAGER` 권한이 자동 이양된다.
@@ -312,14 +313,14 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 | 방식 | 설명 | 비고 |
 |------|------|------|
 | 균등 분배 (`EQUAL`) | 전체 금액 ÷ 참여 멤버 수 → 나머지는 결제자(`paid_by`)에게 귀속 | → 2.2 반올림 정책 |
-| 개별 입력 (`CUSTOM`) | 멤버별 금액을 직접 입력 → `total_amount` = 멤버별 금액 합산으로 자동 계산 | 합산 불일치 시 저장 불가 |
+| 개별 입력 (`CUSTOM`) | 총액(`total_amount`)과 멤버별 금액을 직접 입력 | 멤버별 금액 합계가 총액과 일치하지 않으면 저장 불가 |
 
 **수용 기준 (AC)**
 
 | AC | 검증 규칙 | Given | When | Then |
 |----|----------|-------|------|------|
 | AC-ES1 | BR-05, BR-06 | 10,000원, 참여자 3명(결제자 포함), EQUAL | 지출 저장 | 결제자 3,334원, 나머지 2명 각 3,333원 |
-| AC-ES2 | BR-06 | 참여자 0명 선택(결제자 미포함) | 지출 저장 시도 | 422 에러 (결제자 자동 포함으로 최소 1명 보장) |
+| AC-ES2 | BR-06 | 참여자 0명 선택(결제자 미포함) | 지출 저장 시도 | 400 에러 (`participant_ids`는 최소 1명, zod 입력 검증) |
 | AC-ES3 | DR-04 | CUSTOM, 멤버별 합산 ≠ 입력한 총액 | 지출 저장 시도 | 422 에러 반환 |
 
 ---
@@ -349,7 +350,7 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 |----|----------|-------|------|------|
 | AC-S1 | DR-05 | `period_start > period_end` | 정산 실행 | 422 에러 반환 |
 | AC-S2 | BR-07 | MEMBER가 정산 실행 시도 | 정산 요청 | 403 에러 반환 |
-| AC-S3 | BR-07, BR-08 | 기간 내 지출 0건, MANAGER 실행 | 정산 실행 | SettlementDetail 레코드 = 활성 멤버 수만큼 생성 (모든 `balance = 0`), 전 멤버 메시지 발송 |
+| AC-S3 | BR-07, BR-08 | 기간 내 지출 0건, MANAGER 실행 | 정산 실행 | SettlementDetail 레코드 = 그룹 멤버(`group_members`) 수만큼 생성 (모든 `balance = 0`), 전 멤버 메시지 발송 |
 | AC-S4 | BR-07, BR-08 | 유효한 기간, MANAGER 실행 | 정산 완료 | SettlementDetail 생성, 전 멤버 정산 메시지 발송 |
 
 ---
@@ -385,7 +386,7 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 
 | AC | 검증 규칙 | Given | When | Then |
 |----|----------|-------|------|------|
-| AC-M1 | BR-08 | 정산 완료 (활성 멤버 N명) | 정산 실행 | Message 레코드 N개 생성, 각 멤버에게 발송 |
+| AC-M1 | BR-08 | 정산 완료 (그룹 멤버 N명) | 정산 실행 | Message 레코드 N개 생성, 각 멤버에게 발송 |
 | AC-M2 | BR-09 | 임의 메시지 발송 API 호출 시도 | - | 해당 기능 미제공 (404 또는 미노출) |
 
 ---
@@ -435,11 +436,11 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 | `Group.name` | 1~50자 |
 | `Category.name` | 1~20자 |
 | `Expense.total_amount` | → 2.2 화폐·금액 정책 (정수, 1 이상 999,999,999 이하) |
-| `Expense.date` | YYYY-MM-DD, 1900-01-01 이후, 미래 날짜 허용, → 2.3 시간대 정책 |
+| `Expense.date` | YYYY-MM-DD 형식(정규식 검증), 미래 날짜 허용, → 2.3 시간대 정책. 달력상 유효성·하한(1900-01-01)은 서버에서 검증하지 않음 |
 | `Expense.description` | 최대 200자 (선택) |
 | `Settlement.period_start` | YYYY-MM-DD, `period_end` 이전이거나 같아야 함, → 2.3 시간대 정책 |
 | `Settlement.period_end` | YYYY-MM-DD, `period_start` 이후이거나 같아야 함, → 2.3 시간대 정책 |
-| `Invitation.invitee_username` | 존재하는 `active` 사용자의 `username`이어야 함 |
+| 초대 요청 `invitee_username` (API 입력) | 3~20자, `^[a-z0-9_]+$`. 존재하는 `active` 사용자의 `username`이어야 함 (없으면 404). 저장 시에는 `Invitation.invitee_id`(UUID)로 변환 |
 
 ---
 
@@ -474,7 +475,7 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 | 플랫폼 | 웹 / 모바일 웹 (반응형 UI) |
 | Frontend | React + TypeScript |
 | Backend | Node.js + Express |
-| Database | Supabase (PostgreSQL) |
+| Database | Supabase 호스팅 PostgreSQL (애플리케이션은 `postgres.js`로 직접 연결) |
 | 언어 | 한국어 단독 지원 (v1) |
 | 통화 | KRW 단독 지원 (v1), → 2.2 화폐·금액 정책 |
 | 예상 사용 규모 | 초기 수십~수백 명, 향후 다수 사용자까지 확장 고려 |
@@ -517,3 +518,4 @@ PENDING → EXPIRED   (expires_at 경과 후 1시간 이내 배치 처리)
 | 1.2 | 2026-06-18 | (1) BR-15 신설: 정산 후 Expense 수정·삭제 허용 및 정산 결과 불변 명세; AC-EX1·EX2 추가. (2) 값 중복 제거: 섹션 5에서 비밀번호·금액·시간대를 섹션 2 참조로 전환, 엔티티 표 중복 제거. (3) 검증 공백 보강: 전 AC 표에 검증 규칙 ID 컬럼 추가; Category(AC-C1~C3)·Message(AC-M1·M2) AC 신설; AC-S3 SettlementDetail 레코드 수 명세; AC-I5 배치 SLA(1시간) 추가; 에러 코드 규약(2.4) 신설; 추적 매트릭스에 검증 AC 컬럼 추가 | stepanowon |
 | 1.3 | 2026-06-18 | 7. 기술 제약표에 언어(한국어 단독, v1) 및 통화(KRW 단독, v1) 항목 추가 — PRD 11.1과 일관성 맞춤 | stepanowon |
 | 1.4 | 2026-06-18 | Invitation 엔티티 3.4 섹션: invitee_username → invitee_id(UUID FK → User.id) 변경. 초대 발송 시 username으로 사용자 조회 후 id 저장 | stepanowon |
+| 1.5 | 2026-10-18 | 코드 동기화 — 이메일 인증 v1 미구현 명시, MEMBER 지출 수정·삭제 기준을 결제자로 정정, CUSTOM 분담의 총액 입력·합계 일치 규칙 정정, AC-ES2를 400으로 정정, AC-S3·AC-M1의 대상을 그룹 멤버로 정정, Expense.date 검증 범위 정정, 초대 요청 입력 필드 명확화, DB 접근 방식(postgres.js) 보충 | stepanowon |

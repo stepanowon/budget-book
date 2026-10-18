@@ -28,13 +28,14 @@ PostgreSQL(Supabase)에 연결하며 JWT 기반 인증을 제공합니다.
 ```
 src/
 ├── config/       # 환경변수 로딩·검증 (env.ts), CORS 설정
-├── constants/    # 에러 코드, HTTP 상태 코드
+├── constants/    # 에러 코드·HTTP 상태 코드 (errorCodes.ts), 역할·초대 상태 (roles.ts), 지출 상수 (expense.ts)
 ├── controllers/  # HTTP 요청 파싱, 응답 직렬화
-├── lib/          # DB 연결 풀 (db.ts), JWT 유틸 (jwt.ts)
+├── jobs/         # 초대 만료 처리 잡 (invitationExpiry.job.ts, 30분 주기 setInterval)
+├── lib/          # DB 연결 풀 (db.ts), JWT 유틸 (jwt.ts), bcrypt 유틸 (crypto.ts)
 ├── middlewares/  # 인증, 역할 검증, 입력 검증, 에러 핸들러
 ├── repositories/ # SQL 쿼리 작성, DB row → 도메인 모델 변환
 ├── routes/       # Express 라우터 (URL → 컨트롤러 연결)
-├── services/     # 비즈니스 규칙, 트랜잭션 조율
+├── services/     # 비즈니스 규칙
 ├── types/        # TypeScript 타입 정의 (domain.ts, api.ts)
 ├── utils/        # 순수 유틸 함수 (dateUtils, splitCalculator)
 ├── validators/   # zod 스키마 (요청 바디 검증)
@@ -64,7 +65,7 @@ cp .env.example .env
 | `BCRYPT_COST` | bcrypt cost factor, 기본 12 | |
 | `PORT` | 서버 포트, 기본 3000 | |
 | `NODE_ENV` | 실행 환경 (`development` / `production`) | |
-| `CORS_ORIGIN` | 허용할 프론트엔드 Origin, 기본 `http://localhost:5173` | |
+| `CORS_ORIGIN` | 허용할 프론트엔드 Origin, 기본 `http://localhost:5173` (`production`에서만 적용, 개발 환경은 `localhost:5173`·`localhost:3001` 고정) | |
 
 시크릿 생성 예시:
 ```bash
@@ -104,19 +105,20 @@ npm run dev
 GET http://localhost:3000/api-docs
 ```
 
-주요 엔드포인트 그룹:
+엔드포인트 그룹 (전체 35개 중 요약, 상세는 Swagger 참고):
 
 | 그룹 | 베이스 경로 |
 |------|------------|
-| 인증 | `POST /api/v1/auth/signup` · `POST /api/v1/auth/login` · `PATCH /api/v1/auth/password` |
+| 인증 | `POST /api/v1/auth/signup` · `login` · `refresh` · `logout` · `PATCH /api/v1/auth/password` · `DELETE /api/v1/auth/withdraw` |
 | 그룹 | `GET/POST /api/v1/groups` · `GET/PATCH/DELETE /api/v1/groups/:groupId` |
 | 멤버 | `GET /api/v1/groups/:groupId/members` · `DELETE .../members/:userId` |
-| 초대 | `POST /api/v1/groups/:groupId/invitations` · `GET /api/v1/invitations/my` · `PATCH /api/v1/invitations/:id` |
-| 카테고리 | `GET/POST /api/v1/groups/:groupId/categories` |
-| 지출 | `GET/POST /api/v1/groups/:groupId/expenses` |
-| 정산 | `POST /api/v1/groups/:groupId/settlements` |
-| 리포트 | `GET .../reports/categories` · `GET .../reports/members` · `GET .../reports/expenses/export` |
+| 초대 | `POST·GET /api/v1/groups/:groupId/invitations` · `GET /api/v1/invitations/my` · `PATCH /api/v1/invitations/:id` |
+| 카테고리 | `GET/POST /api/v1/groups/:groupId/categories` · `DELETE .../categories/:categoryId` |
+| 지출 | `GET/POST /api/v1/groups/:groupId/expenses` · `GET/PATCH/DELETE .../expenses/:expenseId` |
+| 정산 | `GET/POST /api/v1/groups/:groupId/settlements` · `GET .../settlements/:settlementId` · `GET .../settlements/:settlementId/export` |
+| 리포트 | `GET .../reports/categories` · `GET .../reports/members` · `GET .../reports/expenses/export` · `GET .../reports/settlements/:settlementId/export` |
 | 메시지 | `GET /api/v1/messages` |
+| 헬스체크 | `GET /api/v1/health` |
 
 전체 명세: [`../swagger/swagger.json`](../swagger/swagger.json)
 
@@ -124,8 +126,9 @@ GET http://localhost:3000/api-docs
 
 ## 인증 방식
 
-- 회원가입·로그인 시 **Access Token**(JWT, 1시간)과 **Refresh Token**(JWT, 30일)을 발급합니다.
-- Access Token은 응답 바디, Refresh Token은 `httpOnly` 쿠키로 전달합니다.
+- 로그인 시 **Access Token**(JWT, 1시간)과 **Refresh Token**(JWT, 30일)을 발급합니다. (회원가입은 토큰을 발급하지 않고 사용자 정보만 반환합니다.)
+- Access Token은 응답 바디, Refresh Token은 `httpOnly`·`SameSite=Strict` 쿠키(`refresh_token`, `Secure`는 production에서만)로 전달합니다.
+- Refresh Token은 갱신 시마다 새로 발급(회전)되며 이전 토큰은 DB에서 삭제됩니다.
 - 모든 인증 필요 엔드포인트는 `Authorization: Bearer <accessToken>` 헤더를 요구합니다.
 - Refresh Token은 DB(`refresh_tokens` 테이블)에 저장되며 로그아웃·탈퇴 시 즉시 삭제됩니다.
 

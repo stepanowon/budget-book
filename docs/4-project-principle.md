@@ -1,7 +1,8 @@
 # 프로젝트 구조 설계 원칙 — 공동 가계부 서비스
 
-> 버전: 1.1
+> 버전: 1.3
 > 작성일: 2026-06-18
+> 수정일: 2026-10-18
 > 관련 문서: 1-domain-definition.md · 2-prd.md · 3-user-scenario.md · 5-arch-diagram.md
 
 ---
@@ -71,8 +72,8 @@
 **왜**: 암묵적 전역 의존성은 테스트 시 모킹이 어렵고, 의존 관계를 파악하려면 구현 내부를 읽어야 한다. 명시적 주입은 의존성을 인터페이스 수준에서 노출한다.
 
 **적용 맥락**:
-- Supabase 클라이언트는 `src/lib/supabase.ts`에서 초기화 후 Repository 생성자에 주입한다.
-- FE의 API 호출 함수는 `axios` 인스턴스를 직접 import하지 않고 `apiClient` 파라미터로 받는 형태를 권장한다.
+- DB 연결 풀(postgres.js)은 `src/lib/db.ts`에서 한 번만 초기화하고, 각 Repository가 이를 모듈로 import해 사용한다. (클래스 생성자 주입은 사용하지 않는다.)
+- FE의 API 호출 함수는 `src/api/client.ts`의 단일 axios 인스턴스(`apiClient`)를 import해 사용하며, 토큰은 `lib/tokenStore.ts`를 통해 인터셉터에서 주입한다.
 
 ---
 
@@ -124,7 +125,7 @@
 **적용 맥락**:
 - BE: 모든 `timestamp` 컬럼은 `timestamptz`(PostgreSQL)로 선언하고 UTC 값을 저장한다.
 - BE: 정산 기간 조회 쿼리에서 KST 기준 `period_start` 00:00:00을 UTC로 변환 후 `WHERE expense.date >= ?`에 사용한다.
-- FE: 날짜 표시 시 `date-fns-tz` 등 라이브러리로 UTC → KST 변환하며, API 전송 시에는 KST 날짜 문자열(`YYYY-MM-DD`)을 그대로 보낸다. 서버가 KST 기준으로 해석한다.
+- FE: 날짜 표시 시 `utils/dateUtils.ts`로 UTC → KST 변환하며, API 전송 시에는 KST 날짜 문자열(`YYYY-MM-DD`)을 그대로 보낸다. 서버가 KST 기준으로 해석한다.
 
 ---
 
@@ -134,7 +135,7 @@
 
 - **단방향 의존**: 상위 레이어만 하위 레이어를 알고, 하위 레이어는 상위 레이어를 참조하지 않는다.
 - **역방향 의존 금지**: Repository가 Service를 import하거나, API Client가 React 컴포넌트를 import하는 것은 허용하지 않는다.
-- **외부 의존성 주입 위치**: Supabase 클라이언트, JWT 라이브러리, 환경변수 기반 설정은 각 스택의 최하위 인프라 레이어(`lib/` 또는 `config/`)에서만 초기화한다.
+- **외부 의존성 초기화 위치**: DB 연결 풀(postgres.js), JWT 라이브러리, 환경변수 기반 설정은 각 스택의 최하위 인프라 레이어(`lib/` 또는 `config/`)에서만 초기화한다.
 
 ---
 
@@ -164,21 +165,21 @@
 ┌───────────────────▼─────────────────────────────┐
 │  Service Layer  (services/)                     │
 │  - 비즈니스 규칙 처리 (정산 집계, 분담 계산 등) │
-│  - 트랜잭션 조율 (여러 Repository 호출 묶음)    │
+│  - 여러 Repository 호출 조합 (현재 명시적 DB 트랜잭션은 사용하지 않음) │
 │  - 도메인 이벤트 처리 (메시지 발송 트리거)      │
 │  의존: Repository Layer만 호출                  │
 └───────────────────┬─────────────────────────────┘
                     │ (단방향)
 ┌───────────────────▼─────────────────────────────┐
 │  Repository Layer  (repositories/)              │
-│  - SQL/Supabase 쿼리 작성                       │
+│  - SQL 쿼리 작성 (postgres.js 태그 템플릿)      │
 │  - 데이터 매핑 (DB row → 도메인 모델)           │
-│  의존: lib/supabase.ts (외부 주입)              │
+│  의존: lib/db.ts                                │
 └───────────────────┬─────────────────────────────┘
                     │ (단방향)
 ┌───────────────────▼─────────────────────────────┐
 │  Infrastructure  (lib/ + config/)               │
-│  - Supabase 클라이언트 초기화                   │
+│  - DB 연결 풀(postgres.js) 초기화               │
 │  - 환경변수 로딩 및 검증                        │
 │  - JWT 서명·검증 유틸                           │
 └─────────────────────────────────────────────────┘
@@ -190,8 +191,8 @@
 // Bad: Repository가 Service를 import
 import { SettlementService } from '../services/settlement.service';
 
-// Good: Repository는 Supabase 클라이언트만 의존
-import { supabase } from '../lib/supabase';
+// Good: Repository는 DB 연결 풀만 의존
+import { sql } from '../lib/db';
 ```
 
 **외부 의존성 주입 위치**:
@@ -224,7 +225,7 @@ import { supabase } from '../lib/supabase';
                     │ (단방향)
 ┌───────────────────▼─────────────────────────────┐
 │  Hook  (hooks/)                                 │
-│  - 서버 상태 관리 (React Query / SWR)           │
+│  - 서버 상태 관리 (React Query v5)              │
 │  - 비즈니스 로직 캡슐화 (폼 유효성, 계산)       │
 │  의존: API Client                               │
 └───────────────────┬─────────────────────────────┘
@@ -234,7 +235,7 @@ import { supabase } from '../lib/supabase';
 │  - HTTP 요청 전송 및 응답 파싱                   │
 │  - 서버 응답 타입 → 프론트엔드 도메인 타입 변환  │
 │  - 에러 응답 파싱 및 표준화                     │
-│  의존: axios 인스턴스 (lib/axios.ts)            │
+│  의존: axios 인스턴스 (api/client.ts)           │
 └───────────────────┬─────────────────────────────┘
                     │ (단방향)
 ┌───────────────────▼─────────────────────────────┐
@@ -328,7 +329,7 @@ const role: Role = memberData.role;
 ### 3.4 API 엔드포인트 네이밍
 
 - RESTful 리소스 중심 설계, 복수 명사 사용
-- 계층 관계는 URL 경로로 표현 (최대 3단계)
+- 계층 관계는 URL 경로로 표현 (가급적 3단계 이내, 일부 export 경로는 4단계)
 - 동사는 HTTP 메서드로 표현
 
 | HTTP 메서드 | 엔드포인트 | 설명 |
@@ -339,18 +340,35 @@ const role: Role = memberData.role;
 | GET | `/api/v1/groups` | 내 그룹 목록 |
 | POST | `/api/v1/groups` | 그룹 생성 |
 | GET | `/api/v1/groups/:groupId` | 그룹 상세 |
+| PATCH | `/api/v1/groups/:groupId` | 그룹 수정 |
+| DELETE | `/api/v1/groups/:groupId` | 그룹 비활성화 |
+| GET | `/api/v1/groups/:groupId/members` | 멤버 목록 |
+| DELETE | `/api/v1/groups/:groupId/members/:userId` | 멤버 제거 |
+| GET | `/api/v1/groups/:groupId/categories` | 카테고리 목록 |
+| POST | `/api/v1/groups/:groupId/categories` | 카테고리 추가 |
+| DELETE | `/api/v1/groups/:groupId/categories/:categoryId` | 카테고리 삭제 |
 | GET | `/api/v1/groups/:groupId/expenses` | 지출 목록 |
 | POST | `/api/v1/groups/:groupId/expenses` | 지출 등록 |
 | PATCH | `/api/v1/groups/:groupId/expenses/:expenseId` | 지출 수정 |
 | DELETE | `/api/v1/groups/:groupId/expenses/:expenseId` | 지출 삭제 |
+| GET | `/api/v1/groups/:groupId/expenses/:expenseId` | 지출 상세 |
 | POST | `/api/v1/groups/:groupId/settlements` | 정산 실행 |
 | GET | `/api/v1/groups/:groupId/settlements` | 정산 목록 |
+| GET | `/api/v1/groups/:groupId/settlements/:settlementId` | 정산 상세 |
+| GET | `/api/v1/groups/:groupId/settlements/:settlementId/export` | 정산 금액 엑셀 내보내기 |
+| GET | `/api/v1/groups/:groupId/reports/categories` | 카테고리별 리포트 |
+| GET | `/api/v1/groups/:groupId/reports/members` | 멤버별 리포트 |
 | GET | `/api/v1/groups/:groupId/reports/expenses/export` | 지출 내역 엑셀 내보내기 |
 | GET | `/api/v1/groups/:groupId/reports/settlements/:settlementId/export` | 정산 금액 엑셀 내보내기 |
+| POST | `/api/v1/auth/logout` | 로그아웃 |
 | PATCH | `/api/v1/auth/password` | 비밀번호 변경 |
+| DELETE | `/api/v1/auth/withdraw` | 회원 탈퇴 |
 | POST | `/api/v1/groups/:groupId/invitations` | 멤버 초대 |
+| GET | `/api/v1/groups/:groupId/invitations` | 그룹 초대 목록 |
+| GET | `/api/v1/invitations/my` | 내 수신 초대 목록 |
 | PATCH | `/api/v1/invitations/:invitationId` | 초대 응답 (수락/거절) |
 | GET | `/api/v1/messages` | 내 메시지 목록 |
+| GET | `/api/v1/health` | 헬스체크 |
 
 ```
 // Bad
@@ -411,9 +429,10 @@ export const AMOUNT_MIN = 1;
 export const AMOUNT_MAX = 999_999_999;
 export const SPLIT_TYPE = { EQUAL: 'EQUAL', CUSTOM: 'CUSTOM' } as const;
 
-// src/constants/auth.ts
+export const INVITATION_EXPIRE_DAYS = 7;          // (expense.ts에 함께 정의)
+
+// src/constants/roles.ts
 export const ROLE = { MANAGER: 'MANAGER', MEMBER: 'MEMBER' } as const;
-export const INVITATION_EXPIRE_DAYS = 7;
 ```
 
 ---
@@ -469,6 +488,8 @@ export const INVITATION_EXPIRE_DAYS = 7;
 
 ### 4.3 커버리지 목표
 
+> 아래 수치는 목표이며, 실제로 강제되는 것은 백엔드 `jest.config.ts`의 전역 라인 커버리지 70%뿐이다. 프론트엔드는 커버리지 설정(임계값·`coverage` 스크립트)이 아직 없다.
+
 | 대상 | 목표 커버리지 |
 |------|-------------|
 | BE `services/` (비즈니스 로직) | 라인 커버리지 80% 이상 |
@@ -506,7 +527,7 @@ export const INVITATION_EXPIRE_DAYS = 7;
 | 도구 | 대상 | 설정 |
 |------|------|------|
 | ESLint | FE/BE TypeScript | `@typescript-eslint` 권장 규칙, `no-explicit-any` 활성화 |
-| Prettier | FE/BE 전체 | 단일 `.prettierrc` (탭 너비 2, 세미콜론 있음, 작은따옴표) |
+| Prettier | FE/BE 전체 | FE/BE 각각의 `.prettierrc` (탭 너비 2, 세미콜론 있음, 작은따옴표, printWidth 100. `trailingComma`는 BE `all`, FE `es5`) |
 | `tsc --noEmit` | FE/BE TypeScript | 타입 오류 0건 유지 |
 
 ---
@@ -537,10 +558,15 @@ Pull Request 생성 및 커밋 푸시 시 다음 항목이 자동 실행된다. 
 
 ```typescript
 // src/config/env.ts — 시작 시 필수값 검증
-const required = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
-required.forEach((key) => {
-  if (!process.env[key]) throw new Error(`Missing required env: ${key}`);
-});
+const REQUIRED_KEYS = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'] as const;
+
+function validateEnv(): void {
+  const missing = REQUIRED_KEYS.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    console.error(`[ENV] Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
 ```
 
 **환경 분리**:
@@ -556,13 +582,13 @@ required.forEach((key) => {
 ### 5.2 보안 원칙
 
 **JWT 저장 및 전송**:
-- Access Token: 메모리(React 상태) 또는 `sessionStorage`에 저장. `localStorage` 저장 금지(XSS 취약).
-- Refresh Token: `httpOnly` + `Secure` + `SameSite=Strict` 쿠키로 전송. JavaScript 접근 불가.
-- 토큰 갱신: Refresh Token 쿠키를 서버에 전송하여 새 Access Token 발급.
+- Access Token: 현재 구현은 `localStorage`(`access_token` 키, `lib/tokenStore.ts`)에 저장한다. XSS에 노출될 수 있는 트레이드오프이며, 메모리 저장 방식으로의 전환은 향후 과제이다.
+- Refresh Token: `httpOnly` + `SameSite=Strict` 쿠키(`refresh_token`)로 전송하며 `Secure`는 production 환경에서만 적용한다. JavaScript 접근 불가. DB(`refresh_tokens`)에도 저장되어 갱신 시마다 회전한다.
+- 토큰 갱신: Refresh Token 쿠키를 서버에 전송하여 새 Access Token과 새 Refresh Token을 발급받는다.
 
 **HTTPS 강제**:
-- 프로덕션 환경에서 HTTP 요청은 HTTPS로 리다이렉트한다.
-- Supabase 클라이언트 URL은 항상 `https://` 스킴을 사용한다.
+- 프로덕션 환경의 HTTPS 강제는 호스팅 인프라(Vercel 등)에서 처리한다. 애플리케이션 코드에는 별도 리다이렉트가 없다.
+- DB 연결 문자열(`DATABASE_URL`)과 외부 서비스 URL은 TLS 연결을 사용한다.
 
 **CORS 설정**:
 - `Access-Control-Allow-Origin`에 허용 도메인을 명시적으로 지정한다. 와일드카드(`*`) 사용 금지.
@@ -571,14 +597,15 @@ required.forEach((key) => {
 ```typescript
 // src/config/cors.ts
 const allowedOrigins =
-  process.env.NODE_ENV === 'production'
-    ? ['https://budget-book.example.com']
-    : ['http://localhost:5173'];
+  env.NODE_ENV === 'production'
+    ? [env.CORS_ORIGIN]
+    : ['http://localhost:5173', 'http://localhost:3001'];
+// credentials: true, methods/allowedHeaders 지정
 ```
 
 **SQL Injection 방지**:
-- Supabase 클라이언트 라이브러리의 파라미터 바인딩을 사용하고, 사용자 입력값을 SQL 문자열에 직접 결합하지 않는다.
-- Raw SQL이 필요한 경우 Supabase의 `rpc()` 함수 또는 준비된 구문을 사용한다.
+- postgres.js의 태그 템플릿(`sql`...``) 파라미터 바인딩을 사용하고, 사용자 입력값을 SQL 문자열에 직접 결합하지 않는다.
+- 복합 처리가 필요한 경우 DB 함수를 `SELECT fn(${param})` 형태로 호출한다.
 
 **비밀번호 해싱**:
 - bcrypt를 사용하며 cost factor는 12 이상으로 설정한다(`BCRYPT_COST=12`).
@@ -599,6 +626,8 @@ const allowedOrigins =
 
 ---
 
+> **구현 현황**: 별도 로거(`logger`)는 없고 `console.info`/`console.error`로 출력한다. 가입·로그인·정산 등 주요 이벤트는 `[AUTH]`, `[INVITATION]` 접두어로 `userId` 위주로 기록하며, 아래 필수 로깅 이벤트 전체가 구현된 것은 아니다.
+
 ### 5.6 Swagger API 문서
 
 - API 문서는 OpenAPI 3.0 명세로 작성하고, Swagger UI에서 자동 생성된다.
@@ -607,7 +636,7 @@ const allowedOrigins =
 - 모든 API 엔드포인트는 요청/응답 예시와 에러 코드를 명세에 포함한다.
 
 **민감 정보 마스킹 (필수)**:
-- 로그에 절대 포함하지 않는 값: 비밀번호(`password`), JWT 토큰 전체 값, Supabase Service Role Key
+- 로그에 절대 포함하지 않는 값: 비밀번호(`password`), JWT 토큰 전체 값, DB 연결 문자열·JWT 시크릿
 - 사용자 식별 시 로그에는 `userId`(UUID)만 사용하고, 이메일·username은 해시 처리 후 기록한다.
 
 ```typescript
@@ -643,7 +672,7 @@ logger.info(`User login attempt`, { userId: user.id, ip: req.ip });
 ```json
 {
   "success": false,
-  "errorCode": "INSUFFICIENT_ROLE",
+  "errorCode": "FORBIDDEN",
   "message": "이 작업을 수행할 권한이 없습니다.",
   "details": {}
 }
@@ -655,8 +684,8 @@ logger.info(`User login attempt`, { userId: user.id, ip: req.ip });
 |-----------|------|------|
 | `INVALID_INPUT` | 400 | 요청 형식 오류, 필드 누락 |
 | `UNAUTHENTICATED` | 401 | 토큰 없음 또는 만료 |
-| `INSUFFICIENT_ROLE` | 403 | 역할 권한 부족 |
-| `RESOURCE_NOT_FOUND` | 404 | 리소스 없음 |
+| `FORBIDDEN` | 403 | 역할 권한 부족 |
+| `NOT_FOUND` | 404 | 리소스 없음 |
 | `DUPLICATE_RESOURCE` | 409 | 중복 (username, 초대 등) |
 | `VALIDATION_FAILED` | 422 | 비즈니스 규칙 위반 (금액 범위, 날짜 역전 등) |
 | `INTERNAL_ERROR` | 500 | 서버 내부 오류 |
@@ -679,55 +708,61 @@ logger.info(`User login attempt`, { userId: user.id, ip: req.ip });
 
 **공통 vs 도메인 컴포넌트 분리 기준**:
 - `components/common/`: 도메인에 의존하지 않는 재사용 UI (Button, Modal, Table, Input 등)
-- `components/[domain]/`: 특정 도메인 데이터를 직접 다루는 컴포넌트 (ExpenseCard, SettlementSummary 등)
+- `components/[domain]/`: 특정 도메인 데이터를 직접 다루는 컴포넌트 (ExpenseCard, GroupCard 등)
 - 컴포넌트가 도메인 타입 import 없이 props만으로 동작하면 `common/`에 위치한다.
 
 ```
 frontend/
 ├── public/                        # 정적 파일 (favicon, index.html)
 ├── src/
-│   ├── pages/                     # 라우트 단위 페이지 컴포넌트 (React Router 기준)
-│   │   ├── auth/
-│   │   │   ├── LoginPage.tsx
-│   │   │   └── SignupPage.tsx
-│   │   ├── groups/
-│   │   │   ├── GroupListPage.tsx
-│   │   │   ├── GroupDetailPage.tsx
-│   │   │   └── GroupCreatePage.tsx
-│   │   ├── expenses/
-│   │   │   ├── ExpenseListPage.tsx
-│   │   │   └── ExpenseFormPage.tsx
-│   │   ├── settlements/
-│   │   │   └── SettlementPage.tsx
-│   │   └── messages/
-│   │       └── MessageListPage.tsx
+│   ├── pages/                     # 라우트 단위 페이지 컴포넌트 (React Router v7)
+│   │   ├── LoginPage.tsx
+│   │   ├── SignupPage.tsx
+│   │   ├── ExpenseListPage.tsx
+│   │   ├── ExpenseFormPage.tsx
+│   │   ├── SettlementPage.tsx
+│   │   ├── MessageListPage.tsx
+│   │   ├── ReportsPage.tsx
+│   │   ├── WithdrawPage.tsx       # 계정 설정 (비밀번호 변경·탈퇴)
+│   │   ├── NotFoundPage.tsx
+│   │   └── groups/
+│   │       ├── GroupListPage.tsx
+│   │       ├── GroupDetailPage.tsx
+│   │       ├── GroupCreatePage.tsx
+│   │       ├── InvitationsPage.tsx
+│   │       └── CategoryPage.tsx
 │   │
 │   ├── components/                # UI 컴포넌트 (렌더링 책임만 가짐)
 │   │   ├── common/                # 도메인 비의존 공통 컴포넌트
 │   │   │   ├── Button.tsx
 │   │   │   ├── Modal.tsx
 │   │   │   ├── Table.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Toast.tsx
+│   │   │   ├── EmptyState.tsx
 │   │   │   ├── LoadingSpinner.tsx
-│   │   │   └── ErrorMessage.tsx
-│   │   ├── layout/                # 페이지 레이아웃 (헤더, 사이드바, 네비게이션)
-│   │   │   ├── AppLayout.tsx
-│   │   │   └── AuthLayout.tsx
+│   │   │   ├── ErrorMessage.tsx
+│   │   │   └── ProtectedRoute.tsx # 인증 보호 라우트
 │   │   ├── expenses/              # 지출 도메인 컴포넌트
 │   │   │   ├── ExpenseCard.tsx
 │   │   │   ├── ExpenseForm.tsx    # 균등/개별 분담 입력 포함
-│   │   │   └── ExpenseSplitInput.tsx
-│   │   ├── settlements/           # 정산 도메인 컴포넌트
-│   │   │   ├── SettlementSummary.tsx
-│   │   │   └── SettlementDetail.tsx
+│   │   │   └── CategoryChip.tsx
 │   │   ├── groups/                # 그룹 도메인 컴포넌트
-│   │   │   ├── GroupCard.tsx
-│   │   │   └── MemberList.tsx
+│   │   │   └── GroupCard.tsx
 │   │   └── charts/                # 차트 컴포넌트 (카테고리별·멤버별 파이 차트)
 │   │       ├── CategoryPieChart.tsx
 │   │       └── MemberPieChart.tsx
 │   │
+│   ├── layouts/                   # 페이지 레이아웃 (헤더, 내비게이션, 모바일 드로어)
+│   │   ├── AppLayout.tsx
+│   │   └── AuthLayout.tsx
+│   │
+│   ├── contexts/
+│   │   └── ToastContext.tsx       # 토스트 알림 Provider
+│   │
 │   ├── hooks/                     # 커스텀 훅 (서버 상태·비즈니스 로직 캡슐화)
 │   │   ├── useAuth.ts             # 인증 상태, 로그인/로그아웃
+│   │   ├── useCategories.ts       # 카테고리 조회, 추가, 삭제
 │   │   ├── useExpenses.ts         # 지출 목록 조회, 생성, 수정, 삭제
 │   │   ├── useSettlement.ts       # 정산 실행, 목록 조회
 │   │   ├── useGroups.ts           # 그룹 목록, 생성, 멤버 관리
@@ -739,6 +774,8 @@ frontend/
 │   │   ├── authApi.ts             # 인증 관련 API 함수
 │   │   ├── groupApi.ts            # 그룹 관련 API 함수
 │   │   ├── expenseApi.ts          # 지출 관련 API 함수
+│   │   ├── categoryApi.ts         # 카테고리 관련 API 함수
+│   │   ├── reportApi.ts           # 리포트·엑셀 내보내기 API 함수
 │   │   ├── settlementApi.ts       # 정산 관련 API 함수
 │   │   ├── invitationApi.ts       # 초대 관련 API 함수
 │   │   └── messageApi.ts          # 메시지 관련 API 함수
@@ -759,15 +796,22 @@ frontend/
 │   │   └── validators.ts          # 클라이언트 사이드 입력 검증
 │   │
 │   ├── lib/                       # 외부 라이브러리 초기화 및 래퍼
-│   │   └── queryClient.ts         # React Query 클라이언트 설정
+│   │   ├── queryClient.ts         # React Query 클라이언트 설정
+│   │   ├── tokenStore.ts          # Access Token 저장·조회 (localStorage)
+│   │   ├── errorMessages.ts       # errorCode → 한글 메시지 매핑
+│   │   └── toastBus.ts            # 인터셉터 등 컴포넌트 밖에서 토스트 발행
+│   │
+│   ├── test/
+│   │   └── setup.ts               # 테스트 환경 설정 (vitest)
 │   │
 │   ├── App.tsx                    # 라우터 설정, 전역 Provider 조합
 │   └── main.tsx                   # React 진입점
 │
-├── .env.example                   # 환경변수 템플릿
-├── .eslintrc.json
+├── .eslintrc.json / eslint.config.js
 ├── .prettierrc
-├── tsconfig.json
+├── tailwind.config.js / postcss.config.js
+├── tsconfig.json / tsconfig.app.json / tsconfig.node.json
+├── vercel.json                    # Vercel 배포 설정
 └── vite.config.ts
 ```
 
@@ -792,42 +836,50 @@ backend/
 │   │   ├── settlement.routes.ts
 │   │   ├── invitation.routes.ts
 │   │   ├── category.routes.ts
+│   │   ├── report.routes.ts
 │   │   └── message.routes.ts
 │   │
 │   ├── controllers/               # HTTP 요청 파싱, 응답 직렬화 (비즈니스 로직 없음)
 │   │   ├── auth.controller.ts
-│   │   ├── group.controller.ts
+│   │   ├── group.controller.ts    # 그룹·멤버·초대(발송/응답) 처리
 │   │   ├── expense.controller.ts
-│   │   ├── settlement.controller.ts
-│   │   ├── invitation.controller.ts
+│   │   ├── settlement.controller.ts # 정산 및 메시지 조회
 │   │   ├── category.controller.ts
-│   │   └── message.controller.ts
+│   │   └── report.controller.ts
 │   │
-│   ├── services/                  # 비즈니스 규칙 처리, 트랜잭션 조율
-│   │   ├── auth.service.ts        # 회원가입, 로그인, 토큰 갱신, 탈퇴
-│   │   ├── group.service.ts       # 그룹 생성/수정, 멤버 관리, MANAGER 이양
+│   ├── services/                  # 비즈니스 규칙 처리
+│   │   ├── auth.service.ts        # 회원가입, 로그인, 토큰 갱신, 로그아웃, 비밀번호 변경, 탈퇴
+│   │   ├── group.service.ts       # 그룹 생성/수정, 멤버 관리, 초대 발송·응답, MANAGER 이양
 │   │   ├── expense.service.ts     # 지출 등록/수정/삭제, 분담 계산
-│   │   ├── settlement.service.ts  # 정산 집계 실행, SettlementDetail 생성, 메시지 트리거
-│   │   ├── invitation.service.ts  # 초대 발송, 수락, 거절, 만료 처리
+│   │   ├── settlement.service.ts  # 정산 집계 실행, SettlementDetail 생성, 메시지 생성·조회
 │   │   ├── category.service.ts    # 카테고리 추가/삭제, 삭제 시 재분류
-│   │   └── message.service.ts     # 메시지 조회
+│   │   └── report.service.ts      # 카테고리·멤버별 리포트, 엑셀 데이터
 │   │
-│   ├── repositories/              # Supabase 쿼리 작성, 결과를 도메인 모델로 변환
+│   ├── validators/                # zod 요청 스키마
+│   │   ├── auth.schema.ts
+│   │   ├── group.schema.ts
+│   │   ├── invitation.schema.ts
+│   │   ├── expense.schema.ts
+│   │   ├── category.schema.ts
+│   │   └── settlement.schema.ts
+│   │
+│   ├── jobs/
+│   │   └── invitationExpiry.job.ts # 초대 만료 처리 (30분 주기 setInterval)
+│   │
+│   ├── repositories/              # SQL 쿼리 작성(postgres.js), 결과를 도메인 모델로 변환
 │   │   ├── user.repository.ts
-│   │   ├── group.repository.ts
-│   │   ├── groupMember.repository.ts
-│   │   ├── expense.repository.ts
-│   │   ├── expenseSplit.repository.ts
-│   │   ├── settlement.repository.ts
-│   │   ├── settlementDetail.repository.ts
+│   │   ├── refreshToken.repository.ts
+│   │   ├── group.repository.ts    # 그룹·멤버십
+│   │   ├── expense.repository.ts  # 지출·분담
+│   │   ├── settlement.repository.ts # 정산·상세·메시지
 │   │   ├── invitation.repository.ts
 │   │   ├── category.repository.ts
-│   │   └── message.repository.ts
+│   │   └── report.repository.ts
 │   │
 │   ├── middlewares/               # Express 미들웨어 (공통 횡단 관심사)
 │   │   ├── auth.middleware.ts     # JWT 파싱·서명 검증, req.user 주입
 │   │   ├── role.middleware.ts     # 그룹 내 MANAGER/MEMBER role 서버사이드 확인
-│   │   ├── validate.middleware.ts # 요청 바디·파라미터 스키마 검증 (zod 또는 joi)
+│   │   ├── validate.middleware.ts # 요청 바디·쿼리 스키마 검증 (zod)
 │   │   └── errorHandler.middleware.ts  # 전역 에러 포착, 표준 에러 응답 반환
 │   │
 │   ├── types/                     # TypeScript 타입 정의
@@ -838,12 +890,11 @@ backend/
 │   ├── constants/                 # 전역 상수
 │   │   ├── roles.ts
 │   │   ├── expense.ts
-│   │   └── errorCodes.ts          # 에러 코드 상수 (INSUFFICIENT_ROLE 등)
+│   │   └── errorCodes.ts          # 에러 코드·HTTP 상태 상수 (FORBIDDEN 등)
 │   │
 │   ├── utils/                     # 순수 유틸 함수
 │   │   ├── splitCalculator.ts     # 균등 분배 계산 (핵심 비즈니스 로직, 단독 테스트)
-│   │   ├── dateUtils.ts           # KST-UTC 변환, 정산 기간 경계 계산
-│   │   └── validators.ts          # 금액 범위, 날짜 유효성 순수 함수
+│   │   └── dateUtils.ts           # KST-UTC 변환, 정산 기간 경계 계산
 │   │
 │   ├── config/                    # 환경변수 로딩·검증, 앱 설정
 │   │   ├── env.ts                 # 필수 환경변수 검증 및 export
@@ -851,53 +902,60 @@ backend/
 │   │
 │   ├── lib/                       # 외부 라이브러리 초기화 (단일 인스턴스)
 │   │   ├── db.ts                  # DB 연결 풀 (postgres.js 기반, max 10 연결)
-│   │   └── jwt.ts                 # JWT 서명·검증 유틸 함수
+│   │   ├── jwt.ts                 # JWT 서명·검증 유틸 함수
+│   │   ├── crypto.ts              # bcrypt 해시·비교
+│   │   └── supabase.ts            # (잔재) 빈 스텁 — 사용하지 않음
 │   │
-│   └── app.ts                     # Express 앱 조립 (미들웨어 등록 순서, 라우터 마운트)
+│   ├── app.ts                     # Express 앱 조립 (미들웨어 등록 순서, 라우터 마운트)
+│   └── server.ts                  # HTTP 서버 진입점 (초대 만료 잡 시작, SIGTERM 처리)
 │
-├── tests/
-│   ├── unit/                      # 단위 테스트 (services/, utils/ 대상)
-│   │   ├── splitCalculator.test.ts
-│   │   ├── settlement.service.test.ts
-│   │   └── dateUtils.test.ts
-│   ├── integration/               # 통합 테스트 (API 엔드포인트, 권한 시나리오)
-│   │   ├── auth.test.ts
-│   │   ├── expense.test.ts
-│   │   └── settlement.test.ts
-│   └── helpers/                   # 테스트 픽스처, DB 초기화 유틸
-│       └── testDb.ts
-│
-├── migrations/                    # DB 마이그레이션 SQL 파일 (Supabase CLI)
-│   ├── 20260618000001_create_users.sql
-│   ├── 20260618000002_create_groups.sql
-│   └── ...
+├── tests/                         # Jest + ts-jest + supertest
+│   ├── setup.ts                   # 테스트 환경변수 설정
+│   ├── unit/                      # 단위 테스트 (services, utils, lib, middlewares, repositories 등)
+│   │   ├── splitCalculator.test.ts, dateUtils.test.ts
+│   │   ├── auth.service.test.ts, group.service.test.ts, expense.service.test.ts
+│   │   ├── settlement.service.test.ts, report.service.test.ts
+│   │   ├── auth.middleware.test.ts, validate.middleware.test.ts, errorHandler.test.ts
+│   │   ├── jwt.test.ts, crypto.test.ts, env.test.ts, constants.test.ts
+│   │   └── repositories.test.ts, invitationExpiry.job.test.ts
+│   └── integration/               # 통합 테스트 (API 엔드포인트)
+│       ├── auth.flow.test.ts
+│       ├── controllers.test.ts
+│       └── health.test.ts
 │
 ├── .env.example
 ├── .eslintrc.json
 ├── .prettierrc
+├── jest.config.ts
 ├── tsconfig.json
 └── package.json
+
+# 레포 루트
+database/schema.sql                # DB 스키마(ENUM·테이블·인덱스·시드) 단일 파일 (마이그레이션 도구 미사용)
+swagger/swagger.json               # OpenAPI 3.0 명세
 ```
 
 **도메인 엔티티별 파일 구조**:
-- 10개 도메인 엔티티(User, Group, GroupMember, Invitation, Category, Expense, ExpenseSplit, Settlement, SettlementDetail, Message)는 각각 `controller`, `service`, `repository` 파일을 갖는다.
+- 10개 도메인 엔티티(User, Group, GroupMember, Invitation, Category, Expense, ExpenseSplit, Settlement, SettlementDetail, Message)는 엔티티별로 일대일 파일을 두지 않고 기능 단위(auth, group, expense, settlement, category, report)로 `controller`, `service`, `repository`를 구성한다. 초대·멤버는 `group.*`, 메시지는 `settlement.*`에 포함된다.
 - 엔티티 간 연산(예: 정산 집계 = Expense + ExpenseSplit + Settlement)은 `settlement.service.ts`에서 여러 Repository를 조합하여 처리한다.
 
 **미들웨어 구성 및 등록 순서**:
 
 ```typescript
 // src/app.ts — 미들웨어 등록 순서
-app.use(helmet());                          // 보안 헤더
-app.use(cors(corsConfig));                  // CORS
+app.use(helmet({ contentSecurityPolicy: false })); // 보안 헤더
+app.use(cors(corsOptions));                 // CORS (credentials: true)
 app.use(express.json());                    // JSON 파싱
-app.use('/api/v1', routes);                 // 라우터 (auth 미들웨어는 라우터 내 개별 적용)
+app.use(cookieParser());                    // refresh_token 쿠키 파싱
+// swagger/swagger.json이 있으면 /api-docs에 Swagger UI 마운트
+app.use('/api/v1', router);                 // 라우터 (auth 미들웨어는 라우터 내 개별 적용)
 app.use(errorHandler);                      // 전역 에러 핸들러 (마지막)
 ```
 
 **DB 연결 풀 초기화 위치 및 주입 방식**:
 - `src/lib/db.ts`에서 postgres.js 기반 DB 연결 풀을 생성하고 export한다.
 - 연결 풀 크기는 최대 10개(`max: 10`)로 설정하여 메모리 효율성과 동시성을 균형맞춘다.
-- Supabase PostgreSQL 데이터베이스에 직접 연결하며, 권한 검증은 미들웨어에서 직접 처리한다.
+- Supabase 호스팅 PostgreSQL에 직접 연결하며(Supabase SDK 미사용), 권한 검증은 미들웨어에서 직접 처리한다.
 - 각 Repository는 `lib/db.ts`의 `sql` 인스턴스를 import하여 쿼리를 실행한다.
 
 ```typescript
@@ -905,7 +963,11 @@ app.use(errorHandler);                      // 전역 에러 핸들러 (마지�
 import postgres from 'postgres';
 import { env } from '../config/env';
 
-export const sql = postgres(env.DATABASE_URL, { max: 10 });
+export const sql = postgres(env.DATABASE_URL, {
+  max: 10,
+  idle_timeout: 30,
+  connect_timeout: 10,
+});
 
 // src/repositories/expense.repository.ts
 import { sql } from '../lib/db';
@@ -929,3 +991,4 @@ export async function findExpensesByGroup(groupId: string) {
 | 1.0 | 2026-06-18 | 최초 작성 | stepanowon |
 | 1.1 | 2026-06-18 | (1) 백엔드 라이브러리 초기화 위치: `src/lib/supabase.ts` → `src/lib/db.ts` (postgres.js 기반 DB 연결 풀, max 10). (2) API 엔드포인트 명세에 엑셀 내보내기 추가. (3) Swagger UI 엔드포인트 추가 (섹션 5.6). | stepanowon |
 | 1.2 | 2026-06-19 | (1) 섹션 3.4 API 엔드포인트에 `PATCH /auth/password` 추가. (2) 섹션 3.6·5.1 환경변수 예시를 실제 구현(`DATABASE_URL`, `CORS_ORIGIN`)에 맞게 수정 (Supabase SDK 환경변수 제거). | stepanowon |
+| 1.3 | 2026-10-18 | 코드 동기화 — (1) 에러 코드명을 실제(`FORBIDDEN`, `NOT_FOUND`)로 정정. (2) FE/BE 디렉터리 구조를 실제 파일 기준으로 갱신(layouts·contexts·validators·jobs·report 계층, 제거된 파일 삭제, 마이그레이션 폴더 → `database/schema.sql`). (3) 남아 있던 Supabase 클라이언트 서술을 postgres.js 기준으로 정정. (4) Access Token 저장 방식을 실제 구현(localStorage)으로 정정, Refresh Token 쿠키 속성·회전 반영. (5) API 엔드포인트 표를 전체 라우트 기준으로 보강. (6) 환경변수 검증·CORS·미들웨어 순서 예시를 실제 코드로 교체, 로깅·커버리지·Prettier 현황 명시, 머리말 버전을 변경 이력과 일치. | stepanowon |
