@@ -752,7 +752,7 @@ Settlement, SettlementDetail, Message 생성을 순서대로 생성한다(명시
 > 복잡도: `S` | 의존성: FE-07, FE-08
 
 **완료 조건**
-- [x] 이메일, 비밀번호, username 필드 및 유효성 검증 구현
+- [x] 이메일, 비밀번호, username 필드 및 유효성 검증 구현 (username은 서버와 동일하게 3~20자, 영문 소문자·숫자·밑줄만 허용 — `utils/validators.ts`의 `getUsernameError`)
 - [x] username 중복(409) 에러를 username 필드 아래에 인라인 표시
 - [x] 가입 성공 후 로그인 페이지로 리다이렉트
 - [x] 모든 폼 필드에 label 연결 및 aria-describedby로 에러 메시지 연결

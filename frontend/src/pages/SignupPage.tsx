@@ -5,6 +5,7 @@ import * as authApi from '@/api/authApi';
 import { ROUTES } from '@/constants/routes';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import { getUsernameError } from '@/utils/validators';
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -31,11 +32,8 @@ export default function SignupPage() {
     } else if (password.length < 8) {
       errors.password = '비밀번호는 8자 이상이어야 합니다';
     }
-    if (!username) {
-      errors.username = '사용자 이름을 입력해 주세요';
-    } else if (username.length < 2) {
-      errors.username = '사용자 이름은 2자 이상이어야 합니다';
-    }
+    const usernameError = getUsernameError(username);
+    if (usernameError) errors.username = usernameError;
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -93,7 +91,7 @@ export default function SignupPage() {
           onChange={(e) => setUsername(e.target.value)}
           error={fieldErrors.username}
           autoComplete="username"
-          placeholder="2자 이상 입력하세요"
+          placeholder="3~20자, 영문 소문자·숫자·밑줄"
         />
         <Button
           type="submit"
