@@ -15,7 +15,7 @@ interface CreateExpenseParams {
   paid_by: string;
   total_amount: number;
   split_type: string;
-  description?: string;
+  description?: string | null;
   date: string;
   participants?: string[];
   splits?: Array<{ user_id: string; amount: number }>;
@@ -25,7 +25,7 @@ interface UpdateExpenseParams {
   category_id?: string;
   total_amount?: number;
   split_type?: string;
-  description?: string;
+  description?: string | null;
   date?: string;
   paid_by?: string;
   participants?: string[];
@@ -134,7 +134,7 @@ export async function updateExpense(
     category_id: string;
     total_amount: number;
     split_type: string;
-    description: string;
+    description: string | null;
     date: string;
     paid_by: string;
   }> = {};

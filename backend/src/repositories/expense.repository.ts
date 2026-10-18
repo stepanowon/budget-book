@@ -8,7 +8,7 @@ export async function createExpense(params: {
   created_by: string;
   total_amount: number;
   split_type: string;
-  description?: string;
+  description?: string | null;
   date: string;
 }): Promise<Expense> {
   const [row] = await sql`
@@ -99,7 +99,7 @@ export async function updateExpense(
     category_id: string;
     total_amount: number;
     split_type: string;
-    description: string;
+    description: string | null;
     date: string;
     paid_by: string;
   }>,

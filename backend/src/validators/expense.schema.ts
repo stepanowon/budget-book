@@ -9,7 +9,7 @@ export const createExpenseSchema = z.object({
     .min(AMOUNT_MIN, `금액은 ${AMOUNT_MIN}원 이상이어야 합니다.`)
     .max(AMOUNT_MAX, `금액은 ${AMOUNT_MAX}원 이하여야 합니다.`),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식은 YYYY-MM-DD여야 합니다.'),
-  description: z.string().max(200, '설명은 200자 이하여야 합니다.').optional(),
+  description: z.string().max(200, '설명은 200자 이하여야 합니다.').nullable().optional(),
   split_type: z.enum(['EQUAL', 'CUSTOM']),
   participant_ids: z.array(z.string().uuid()).min(1, '참여자는 1명 이상이어야 합니다.'),
   custom_splits: z
